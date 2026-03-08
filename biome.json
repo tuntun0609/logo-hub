@@ -1,36 +1,63 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": ["ultracite/core", "ultracite/react", "ultracite/next"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": true
+    "useIgnoreFile": true,
+    "defaultBranch": "master"
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
+    "includes": [
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!src/components/ui",
+      "!src/components/ai-elements"
+    ]
   },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
+  "javascript": {
+    "formatter": {
+      "semicolons": "asNeeded",
+      "quoteStyle": "single"
+    }
   },
   "linter": {
     "enabled": true,
-    "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noUnknownAtRules": "off"
-      }
-    },
     "domains": {
       "next": "recommended",
       "react": "recommended"
-    }
-  },
-  "assist": {
-    "actions": {
-      "source": {
-        "organizeImports": "on"
+    },
+    "rules": {
+      "style": {
+        "noNonNullAssertion": "off",
+        "noMagicNumbers": "off",
+        "useConsistentTypeDefinitions": {
+          "level": "warn",
+          "options": {
+            "style": "interface"
+          }
+        },
+        "useBlockStatements": "warn"
+      },
+      "suspicious": {
+        "noUnknownAtRules": "off",
+        "noConsole": "off",
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off"
+      },
+      "performance": {
+        "noNamespaceImport": "off",
+        "noBarrelFile": "off",
+        "noImgElement": "off"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
       }
     }
   }
