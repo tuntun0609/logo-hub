@@ -1,9 +1,11 @@
 import Image from 'next/image'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
+        <ThemeToggle />
         <Image
           alt="Next.js logo"
           className="dark:invert"
@@ -51,7 +53,7 @@ export default function Home() {
             Deploy Now
           </a>
           <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-black/8 border-solid px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            className="flex h-12 w-full items-center justify-center rounded-full border border-black/8 border-solid px-5 transition-colors hover:border-transparent hover:bg-black/4 md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
             rel="noopener noreferrer"
             target="_blank"
