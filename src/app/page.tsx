@@ -1,11 +1,14 @@
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+'use client'
+
+import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function Home() {
   return (
     <div>
       <header className="flex h-16 items-center justify-end gap-4 p-4">
-        <Show when="signed-out">
+        <Unauthenticated>
           <SignInButton />
           <SignUpButton>
             <button
@@ -15,10 +18,13 @@ export default function Home() {
               Sign Up
             </button>
           </SignUpButton>
-        </Show>
-        <Show when="signed-in">
+        </Unauthenticated>
+        <Authenticated>
           <UserButton />
-        </Show>
+        </Authenticated>
+        <AuthLoading>
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </AuthLoading>
       </header>
       <ThemeToggle />
     </div>
