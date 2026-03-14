@@ -1,17 +1,41 @@
 'use client'
 
-import { SignInButton, UserButton } from '@clerk/nextjs'
+import { useClerk, useUser } from '@clerk/nextjs'
 import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react'
 import {
+  ChevronsUpDown,
+  CircleHelp,
   Compass,
-  FolderOpen,
+  GalleryVerticalEnd,
   Hexagon,
   Home,
+  Images,
+  Loader2,
   LogIn,
-  Settings,
+  LogOut,
+  MessageSquarePlus,
+  Monitor,
+  Moon,
+  Sparkles,
+  Sun,
+  UserCog,
+  Users,
   Wrench,
 } from 'lucide-react'
-import { ThemeToggle } from '@/components/theme-toggle'
+import Link from 'next/link'
+import { useTheme } from 'next-themes'
+import { SidebarMenuItems } from '@/components/sidebar-menu-items'
+import { SidebarTrigger } from '@/components/sidebar-trigger'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Sidebar,
   SidebarContent,
@@ -24,101 +48,215 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
 } from '@/components/ui/sidebar'
-import { Skeleton } from '@/components/ui/skeleton'
 
-const platformItems = [
+const discoverItems = [
   { title: 'Home', icon: Home, isActive: true },
-  { title: 'Explore', icon: Compass },
-  { title: 'Collections', icon: FolderOpen },
+  { title: 'Showcase', icon: GalleryVerticalEnd },
+  { title: 'Gallery', icon: Images, badge: 'New' },
+  { title: 'Navigate', icon: Compass },
+  { title: 'Authors', icon: Users },
 ]
 
 const toolItems = [
+  { title: 'Generate', icon: Sparkles, badge: 'Beta' },
   { title: 'Tools', icon: Wrench },
-  { title: 'Settings', icon: Settings },
 ]
 
+function getUserInitials(name?: string | null) {
+  if (!name) {
+    return '?'
+  }
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useUser()
+  const { signOut, openUserProfile } = useClerk()
+  const { setTheme } = useTheme()
+
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Logo Hub">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Hexagon className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Logo Hub</span>
-                <span className="truncate text-muted-foreground text-xs">
-                  Platform
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex items-center justify-between gap-4 group-data-[state=collapsed]:flex-col">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <Hexagon className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Logo Hub</span>
+                  <span className="truncate text-muted-foreground text-xs">
+                    Platform
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <SidebarTrigger />
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupLabel>Discover</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {platformItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    isActive={item.isActive}
-                    tooltip={item.title}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <SidebarMenuItems items={discoverItems} />
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {toolItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton tooltip={item.title}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <SidebarMenuItems items={toolItems} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="flex justify-center">
-            <ThemeToggle />
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={(triggerProps) => (
+                  <SidebarMenuButton {...triggerProps} tooltip="Theme">
+                    <div className="relative size-4 shrink-0">
+                      <Sun className="absolute inset-0 size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                      <Moon className="absolute inset-0 size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                    </div>
+                    <span>Theme</span>
+                  </SidebarMenuButton>
+                )}
+              />
+              <DropdownMenuContent align="end" side="right">
+                <DropdownMenuItem onClick={() => setTheme('light')}>
+                  <Sun />
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('dark')}>
+                  <Moon />
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('system')}>
+                  <Monitor />
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarSeparator />
-        <SidebarMenu>
+
           <SidebarMenuItem>
             <Authenticated>
-              <UserButton />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={(triggerProps) => (
+                    <SidebarMenuButton
+                      {...triggerProps}
+                      size="lg"
+                      tooltip={user?.fullName || 'Account'}
+                    >
+                      <Avatar className="size-8 rounded-lg">
+                        <AvatarImage
+                          alt={user?.fullName || ''}
+                          src={user?.imageUrl}
+                        />
+                        <AvatarFallback className="rounded-lg">
+                          {getUserInitials(user?.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-semibold">
+                          {user?.fullName}
+                        </span>
+                        <span className="truncate text-muted-foreground text-xs">
+                          {user?.primaryEmailAddress?.emailAddress}
+                        </span>
+                      </div>
+                      <ChevronsUpDown className="ml-auto size-4" />
+                    </SidebarMenuButton>
+                  )}
+                />
+                <DropdownMenuContent
+                  align="end"
+                  className="w-60 p-2"
+                  side="right"
+                  sideOffset={8}
+                >
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="p-0 font-normal">
+                      <div className="flex items-center gap-3 p-2 text-left text-sm">
+                        <Avatar className="size-9 rounded-lg">
+                          <AvatarImage
+                            alt={user?.fullName || ''}
+                            src={user?.imageUrl}
+                          />
+                          <AvatarFallback className="rounded-lg">
+                            {getUserInitials(user?.fullName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="grid flex-1 text-left leading-tight">
+                          <span className="truncate font-semibold text-sm">
+                            {user?.fullName}
+                          </span>
+                          <span className="mt-0.5 truncate text-muted-foreground text-xs">
+                            {user?.primaryEmailAddress?.emailAddress}
+                          </span>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      className="py-2"
+                      onClick={() => openUserProfile()}
+                    >
+                      <UserCog />
+                      Account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="py-2">
+                      <CircleHelp />
+                      Help
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="py-2">
+                      <MessageSquarePlus />
+                      Feedback
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      className="py-2"
+                      onClick={() => signOut()}
+                    >
+                      <LogOut />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </Authenticated>
             <Unauthenticated>
-              <SignInButton>
-                <SidebarMenuButton tooltip="Sign In">
-                  <LogIn />
-                  <span>Sign In</span>
-                </SidebarMenuButton>
-              </SignInButton>
+              <SidebarMenuButton
+                render={(buttonProps) => (
+                  <Link {...buttonProps} href="/sign-in">
+                    <LogIn />
+                    <span>Sign In</span>
+                  </Link>
+                )}
+                tooltip="Sign In"
+              />
             </Unauthenticated>
             <AuthLoading>
-              <Skeleton className="h-8 w-full rounded-md" />
+              <SidebarMenuButton className="justify-center" disabled size="lg">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              </SidebarMenuButton>
             </AuthLoading>
           </SidebarMenuItem>
         </SidebarMenu>
