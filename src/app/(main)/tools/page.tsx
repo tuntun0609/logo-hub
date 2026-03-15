@@ -55,6 +55,11 @@ const toolGroups: ToolGroup[] = [
         href: '/tools/svg-to-png',
       },
       {
+        name: 'ICO Converter',
+        description: '将图片转换为多尺寸 ICO 图标文件',
+        href: '/tools/ico-converter',
+      },
+      {
         name: 'Favicon Generator',
         description: '快速生成多尺寸 Favicon 图标',
         href: 'https://favicon.io',

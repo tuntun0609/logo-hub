@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { AppSidebar } from '@/components/app-sidebar'
+import { MobileHeader } from '@/components/mobile-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -17,6 +18,7 @@ export async function SidebarLayout({
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
         <SidebarInset>
+          <MobileHeader />
           <div className="flex flex-1 flex-col gap-4 p-2">{children}</div>
         </SidebarInset>
       </SidebarProvider>
