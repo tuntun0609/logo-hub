@@ -23,6 +23,7 @@ import {
   Wrench,
 } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { SidebarMenuItems } from '@/components/sidebar-menu-items'
 import { SidebarTrigger } from '@/components/sidebar-trigger'
@@ -51,7 +52,7 @@ import {
 } from '@/components/ui/sidebar'
 
 const discoverItems = [
-  { title: 'Home', icon: Home, isActive: true },
+  { title: 'Home', url: '/', icon: Home },
   { title: 'Showcase', icon: GalleryVerticalEnd },
   { title: 'Gallery', icon: Images, badge: 'New' },
   { title: 'Navigate', icon: Compass },
@@ -60,7 +61,7 @@ const discoverItems = [
 
 const toolItems = [
   { title: 'Generate', icon: Sparkles, badge: 'Beta' },
-  { title: 'Tools', icon: Wrench },
+  { title: 'Tools', url: '/tools', icon: Wrench },
 ]
 
 function getUserInitials(name?: string | null) {
@@ -79,6 +80,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { user } = useUser()
   const { signOut, openUserProfile } = useClerk()
   const { setTheme } = useTheme()
+  const pathname = usePathname()
+
+  const withActive = (items: typeof discoverItems) =>
+    items.map((item) => ({
+      ...item,
+      isActive: item.url ? pathname === item.url : false,
+    }))
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
@@ -107,14 +115,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>Discover</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenuItems items={discoverItems} />
+            <SidebarMenuItems items={withActive(discoverItems)} />
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenuItems items={toolItems} />
+            <SidebarMenuItems items={withActive(toolItems)} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

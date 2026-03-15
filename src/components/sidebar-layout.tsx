@@ -17,10 +17,7 @@ export async function SidebarLayout({
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-            <span className="text-muted-foreground text-sm">Home</span>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+          <div className="flex flex-1 flex-col gap-4 p-2">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import Link from 'next/link'
 import {
   SidebarMenu,
   SidebarMenuBadge,
@@ -12,6 +13,7 @@ export interface SidebarMenuItemData {
   icon: LucideIcon
   isActive?: boolean
   title: string
+  url?: string
 }
 
 interface SidebarMenuItemsProps {
@@ -21,18 +23,10 @@ interface SidebarMenuItemsProps {
 export function SidebarMenuItems({ items }: SidebarMenuItemsProps) {
   return (
     <SidebarMenu className="gap-1.5">
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            className={cn(
-              'group/button transition-all duration-200',
-              item.isActive
-                ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20'
-                : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
-            )}
-            isActive={item.isActive}
-            tooltip={item.title}
-          >
+      {items.map((item) => {
+        const href = item.url
+        const itemContent = (
+          <>
             <item.icon
               className={cn(
                 'transition-all duration-200',
@@ -49,21 +43,47 @@ export function SidebarMenuItems({ items }: SidebarMenuItemsProps) {
             >
               {item.title}
             </span>
-          </SidebarMenuButton>
-          {item.badge && (
-            <SidebarMenuBadge
+          </>
+        )
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton
               className={cn(
-                'transition-all duration-200',
+                'group/button transition-all duration-200',
                 item.isActive
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-primary/10 text-primary group-hover/button:bg-primary/20'
+                  ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20'
+                  : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
               )}
+              isActive={item.isActive}
+              render={
+                href
+                  ? (buttonProps) => (
+                      <Link {...buttonProps} href={href}>
+                        {itemContent}
+                      </Link>
+                    )
+                  : undefined
+              }
+              tooltip={item.title}
             >
-              {item.badge}
-            </SidebarMenuBadge>
-          )}
-        </SidebarMenuItem>
-      ))}
+              {itemContent}
+            </SidebarMenuButton>
+            {item.badge && (
+              <SidebarMenuBadge
+                className={cn(
+                  'transition-all duration-200',
+                  item.isActive
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-primary/10 text-primary group-hover/button:bg-primary/20'
+                )}
+              >
+                {item.badge}
+              </SidebarMenuBadge>
+            )}
+          </SidebarMenuItem>
+        )
+      })}
     </SidebarMenu>
   )
 }
