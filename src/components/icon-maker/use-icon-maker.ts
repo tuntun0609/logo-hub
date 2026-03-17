@@ -24,7 +24,7 @@ const defaultBackground: BackgroundStyles = {
   noiseOpacity: 0,
   radius: 24,
   strokeSize: 0,
-  strokeColor: '#000000',
+  strokeColor: '#ffffff',
   strokeOpacity: 100,
 }
 

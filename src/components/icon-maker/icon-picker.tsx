@@ -148,10 +148,9 @@ export function IconPicker({
       }
       const url = URL.createObjectURL(file)
       onUploadSvg(url)
-      onSourceTypeChange('upload')
       e.target.value = ''
     },
-    [onUploadSvg, onSourceTypeChange]
+    [onUploadSvg]
   )
 
   return (
@@ -217,10 +216,7 @@ export function IconPicker({
               isSelected={iconSourceType === 'lucide' && iconId === name}
               key={name}
               name={name}
-              onClick={() => {
-                onSourceTypeChange('lucide')
-                onSelectIcon(name)
-              }}
+              onClick={() => onSelectIcon(name)}
             />
           ))}
         </div>

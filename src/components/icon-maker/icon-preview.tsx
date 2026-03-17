@@ -7,20 +7,30 @@ import type { FillStyles, IconMakerState } from './types'
 
 const SIZE = 512
 
-function drawRoundRectPath(ctx: CanvasRenderingContext2D, r: number) {
-  const w = SIZE
-  const h = SIZE
-  ctx.beginPath()
-  ctx.moveTo(r, 0)
-  ctx.lineTo(w - r, 0)
-  ctx.quadraticCurveTo(w, 0, w, r)
-  ctx.lineTo(w, h - r)
-  ctx.quadraticCurveTo(w, h, w - r, h)
-  ctx.lineTo(r, h)
-  ctx.quadraticCurveTo(0, h, 0, h - r)
-  ctx.lineTo(0, r)
-  ctx.quadraticCurveTo(0, 0, r, 0)
+function addRoundRectSubpath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  const cr = Math.max(0, Math.min(r, w / 2, h / 2))
+  ctx.moveTo(x + cr, y)
+  ctx.lineTo(x + w - cr, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + cr)
+  ctx.lineTo(x + w, y + h - cr)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - cr, y + h)
+  ctx.lineTo(x + cr, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - cr)
+  ctx.lineTo(x, y + cr)
+  ctx.quadraticCurveTo(x, y, x + cr, y)
   ctx.closePath()
+}
+
+function drawRoundRectPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.beginPath()
+  addRoundRectSubpath(ctx, 0, 0, SIZE, SIZE, r)
 }
 
 function drawGradient(
@@ -108,12 +118,17 @@ function drawStroke(
   if (strokeSize <= 0) {
     return
   }
+  const inner = SIZE - 2 * strokeSize
+  if (inner <= 0) {
+    return
+  }
   ctx.save()
-  ctx.strokeStyle = strokeColor
   ctx.globalAlpha = strokeOpacity / 100
-  ctx.lineWidth = strokeSize
-  drawRoundRectPath(ctx, radius)
-  ctx.stroke()
+  ctx.fillStyle = strokeColor
+  ctx.beginPath()
+  addRoundRectSubpath(ctx, 0, 0, SIZE, SIZE, radius)
+  addRoundRectSubpath(ctx, strokeSize, strokeSize, inner, inner, radius)
+  ctx.fill('evenodd')
   ctx.restore()
 }
 

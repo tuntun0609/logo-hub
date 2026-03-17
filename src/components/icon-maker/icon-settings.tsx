@@ -38,7 +38,7 @@ export function IconSettings({
   const { fillStyles, background, iconStyles } = state
 
   return (
-    <div className="thin-scrollbar flex h-full flex-col gap-4 overflow-auto">
+    <div className="thin-scrollbar flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden">
       {/* Presets */}
       <details className="group" open>
         <summary className="flex cursor-pointer list-none items-center justify-between py-1 font-medium text-sm">
