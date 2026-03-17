@@ -50,20 +50,14 @@ const toolGroups: ToolGroup[] = [
     label: '转换工具',
     tools: [
       {
-        name: 'SVG to PNG',
-        description: '将 SVG 矢量图转换为 PNG 格式',
-        href: '/tools/svg-to-png',
+        name: 'Icon Maker',
+        description: '选择图标、渐变与背景，生成并导出 App 图标',
+        href: '/tools/icon-maker',
       },
       {
         name: 'ICO Converter',
         description: '将图片转换为多尺寸 ICO 图标文件',
         href: '/tools/ico-converter',
-      },
-      {
-        name: 'Favicon Generator',
-        description: '快速生成多尺寸 Favicon 图标',
-        href: 'https://favicon.io',
-        isExternal: true,
       },
       {
         name: 'Background Remover',

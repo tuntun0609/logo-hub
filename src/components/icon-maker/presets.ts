@@ -1,0 +1,28 @@
+import type { GradientPreset } from './types'
+
+export const GRADIENT_PRESETS: GradientPreset[] = [
+  { id: 0, primaryColor: '#8E2DE2', secondaryColor: '#4A00E0' },
+  { id: 1, primaryColor: '#667eea', secondaryColor: '#764ba2' },
+  { id: 2, primaryColor: '#f093fb', secondaryColor: '#f5576c' },
+  { id: 3, primaryColor: '#4facfe', secondaryColor: '#00f2fe' },
+  { id: 4, primaryColor: '#43e97b', secondaryColor: '#38f9d7' },
+  { id: 5, primaryColor: '#fa709a', secondaryColor: '#fee140' },
+  { id: 6, primaryColor: '#a8edea', secondaryColor: '#fed6e3' },
+  { id: 7, primaryColor: '#ff9a9e', secondaryColor: '#fecfef' },
+  { id: 8, primaryColor: '#ffecd2', secondaryColor: '#fcb69f' },
+  { id: 9, primaryColor: '#ff6e7f', secondaryColor: '#bfe9ff' },
+  { id: 10, primaryColor: '#e0c3fc', secondaryColor: '#8ec5fc' },
+  { id: 11, primaryColor: '#f77062', secondaryColor: '#fe5196' },
+  { id: 12, primaryColor: '#30cfd0', secondaryColor: '#330867' },
+  { id: 13, primaryColor: '#a18cd1', secondaryColor: '#fbc2eb' },
+  { id: 14, primaryColor: '#ff0844', secondaryColor: '#ffb199' },
+  { id: 15, primaryColor: '#0ba360', secondaryColor: '#3cba92' },
+  { id: 16, primaryColor: '#2E3192', secondaryColor: '#1BFFFF' },
+  { id: 17, primaryColor: '#D4145A', secondaryColor: '#FBB03B' },
+  { id: 18, primaryColor: '#009245', secondaryColor: '#FCEE21' },
+  { id: 19, primaryColor: '#662D8C', secondaryColor: '#ED1E79' },
+  { id: 20, primaryColor: '#EE9CA7', secondaryColor: '#FFDDE1' },
+  { id: 21, primaryColor: '#2193b0', secondaryColor: '#6dd5ed' },
+  { id: 22, primaryColor: '#ee0979', secondaryColor: '#ff6a00' },
+  { id: 23, primaryColor: '#232526', secondaryColor: '#414345' },
+]
