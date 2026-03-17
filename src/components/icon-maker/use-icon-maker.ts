@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useReducer } from 'react'
 import { GRADIENT_PRESETS } from './presets'
 import type {
   BackgroundStyles,
@@ -49,16 +49,81 @@ function cloneState(s: IconMakerState): IconMakerState {
   return JSON.parse(JSON.stringify(s))
 }
 
+interface HistoryState {
+  current: IconMakerState
+  history: IconMakerState[]
+  historyIndex: number
+}
+
+type HistoryAction =
+  | {
+      type: 'set'
+      update:
+        | Partial<IconMakerState>
+        | ((prev: IconMakerState) => IconMakerState)
+    }
+  | { type: 'undo' }
+  | { type: 'redo' }
+
+function historyReducer(
+  state: HistoryState,
+  action: HistoryAction
+): HistoryState {
+  switch (action.type) {
+    case 'set': {
+      const next =
+        typeof action.update === 'function'
+          ? action.update(state.current)
+          : { ...state.current, ...action.update }
+      const truncated = state.history.slice(0, state.historyIndex + 1)
+      const newHistory = [...truncated, cloneState(next)]
+      return {
+        current: next,
+        history:
+          newHistory.length > HISTORY_MAX
+            ? newHistory.slice(-HISTORY_MAX)
+            : newHistory,
+        historyIndex: state.historyIndex + 1,
+      }
+    }
+    case 'undo': {
+      if (state.historyIndex <= 0) {
+        return state
+      }
+      const prevIndex = state.historyIndex - 1
+      return {
+        ...state,
+        current: cloneState(state.history[prevIndex]),
+        historyIndex: prevIndex,
+      }
+    }
+    case 'redo': {
+      if (state.historyIndex >= state.history.length - 1) {
+        return state
+      }
+      const nextIndex = state.historyIndex + 1
+      return {
+        ...state,
+        current: cloneState(state.history[nextIndex]),
+        historyIndex: nextIndex,
+      }
+    }
+    default:
+      return state
+  }
+}
+
 export function useIconMaker(initialState?: Partial<IconMakerState>) {
   const initial = {
     ...defaultIconMakerState,
     ...initialState,
   }
-  const [state, setStateInternal] = useState<IconMakerState>(() => initial)
-  const [history, setHistory] = useState<IconMakerState[]>(() => [
-    cloneState(initial),
-  ])
-  const [historyIndex, setHistoryIndex] = useState(0)
+
+  const [historyState, dispatch] = useReducer(historyReducer, {
+    current: initial,
+    history: [cloneState(initial)],
+    historyIndex: 0,
+  })
 
   const setState = useCallback(
     (
@@ -66,40 +131,18 @@ export function useIconMaker(initialState?: Partial<IconMakerState>) {
         | Partial<IconMakerState>
         | ((prev: IconMakerState) => IconMakerState)
     ) => {
-      setStateInternal((prev) => {
-        const next =
-          typeof update === 'function' ? update(prev) : { ...prev, ...update }
-        setHistory((h) => {
-          const truncated = h.slice(0, historyIndex + 1)
-          const newHistory = [...truncated, cloneState(next)]
-          return newHistory.length > HISTORY_MAX
-            ? newHistory.slice(-HISTORY_MAX)
-            : newHistory
-        })
-        setHistoryIndex((i) => i + 1)
-        return next
-      })
+      dispatch({ type: 'set', update })
     },
-    [historyIndex]
+    []
   )
 
   const undo = useCallback(() => {
-    if (historyIndex <= 0) {
-      return
-    }
-    const prevIndex = historyIndex - 1
-    setStateInternal(cloneState(history[prevIndex]))
-    setHistoryIndex(prevIndex)
-  }, [history, historyIndex])
+    dispatch({ type: 'undo' })
+  }, [])
 
   const redo = useCallback(() => {
-    if (historyIndex >= history.length - 1) {
-      return
-    }
-    const nextIndex = historyIndex + 1
-    setStateInternal(cloneState(history[nextIndex]))
-    setHistoryIndex(nextIndex)
-  }, [history, historyIndex])
+    dispatch({ type: 'redo' })
+  }, [])
 
   const setFillStyles = useCallback(
     (update: Partial<FillStyles>) => {
@@ -145,16 +188,16 @@ export function useIconMaker(initialState?: Partial<IconMakerState>) {
   )
 
   return {
-    state,
+    state: historyState.current,
     setState,
     setFillStyles,
     setBackground,
     setIconStyles,
     applyPreset,
-    history,
-    historyIndex,
-    canUndo: historyIndex > 0,
-    canRedo: historyIndex < history.length - 1,
+    history: historyState.history,
+    historyIndex: historyState.historyIndex,
+    canUndo: historyState.historyIndex > 0,
+    canRedo: historyState.historyIndex < historyState.history.length - 1,
     undo,
     redo,
   }
