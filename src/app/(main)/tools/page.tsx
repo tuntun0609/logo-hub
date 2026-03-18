@@ -76,6 +76,11 @@ const toolGroups: ToolGroup[] = [
     label: '配色工具',
     tools: [
       {
+        name: 'Theme Color Extractor',
+        description: '从图片中提取主题配色方案',
+        href: '/tools/color-extractor',
+      },
+      {
         name: 'Coolors',
         description: '快速生成和浏览配色方案',
         href: 'https://coolors.co',
