@@ -105,8 +105,15 @@ function ColorSwatch({
         className="h-12 w-full rounded-md border border-border"
         style={{ backgroundColor: color.hex() }}
       />
-      <span className="text-center font-mono text-xs">
-        {copied ? 'Copied!' : displayValue}
+      <span className="flex h-5 items-center justify-center text-center font-mono text-xs">
+        {copied ? (
+          <span className="inline-flex items-center gap-1">
+            <Check className="size-3.5 shrink-0 text-green-500" />
+            Copied!
+          </span>
+        ) : (
+          displayValue
+        )}
       </span>
     </button>
   )
@@ -403,10 +410,15 @@ export default function ColorExtractorPage() {
                 )}
               </div>
               <div className="flex flex-col gap-0.5 text-left">
-                <span className="font-medium font-mono text-sm">
-                  {copiedKey === 'dominant'
-                    ? 'Copied!'
-                    : formatColor(dominant, colorFormat)}
+                <span className="flex min-h-5 items-center font-medium font-mono text-sm">
+                  {copiedKey === 'dominant' ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Check className="size-3.5 shrink-0 text-green-500" />
+                      Copied!
+                    </span>
+                  ) : (
+                    formatColor(dominant, colorFormat)
+                  )}
                 </span>
                 <span className="font-mono text-muted-foreground text-xs">
                   {colorFormat !== 'hex' && dominant.hex().toUpperCase()}
