@@ -15,6 +15,36 @@ import { Slider } from '@/components/ui/slider'
 import { loadImageFromFile, validateImageFile } from '@/lib/canvas-utils'
 import { cn } from '@/lib/utils'
 
+type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch'
+
+const COLOR_FORMATS: { value: ColorFormat; label: string }[] = [
+  { value: 'hex', label: 'HEX' },
+  { value: 'rgb', label: 'RGB' },
+  { value: 'hsl', label: 'HSL' },
+  { value: 'oklch', label: 'OKLCH' },
+]
+
+function formatColor(color: Color, format: ColorFormat): string {
+  switch (format) {
+    case 'hex':
+      return color.hex().toUpperCase()
+    case 'rgb': {
+      const { r, g, b } = color.rgb()
+      return `rgb(${r}, ${g}, ${b})`
+    }
+    case 'hsl': {
+      const { h, s, l } = color.hsl()
+      return `hsl(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%)`
+    }
+    case 'oklch': {
+      const { l, c, h } = color.oklch()
+      return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${Math.round(h)})`
+    }
+    default:
+      return color.hex().toUpperCase()
+  }
+}
+
 const SWATCH_LABELS: Record<string, string> = {
   Vibrant: '鲜艳',
   Muted: '柔和',
@@ -24,45 +54,59 @@ const SWATCH_LABELS: Record<string, string> = {
   LightMuted: '浅柔和',
 }
 
+function ColorFormatSwitcher({
+  value,
+  onChange,
+}: {
+  value: ColorFormat
+  onChange: (format: ColorFormat) => void
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-lg border bg-muted/30 p-1">
+      {COLOR_FORMATS.map((fmt) => (
+        <button
+          className={cn(
+            'rounded-md px-2.5 py-1 font-mono text-xs transition-colors',
+            value === fmt.value
+              ? 'bg-background font-medium text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+          key={fmt.value}
+          onClick={() => onChange(fmt.value)}
+          type="button"
+        >
+          {fmt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function ColorSwatch({
   color,
-  label,
   copied,
+  format,
   onCopy,
 }: {
   color: Color
-  label?: string
   copied: boolean
+  format: ColorFormat
   onCopy: () => void
 }) {
-  const hex = color.hex()
-  const { r, g, b } = color.rgb()
+  const displayValue = formatColor(color, format)
 
   return (
     <button
-      className="group flex flex-col items-center gap-2 rounded-lg border bg-muted/20 p-3 transition-colors hover:bg-muted/50"
+      className="flex flex-col items-center gap-2 rounded-lg border bg-muted/20 p-3 transition-colors hover:bg-muted/50"
       onClick={onCopy}
       type="button"
     >
       <div
         className="h-12 w-full rounded-md border border-border"
-        style={{ backgroundColor: hex }}
+        style={{ backgroundColor: color.hex() }}
       />
-      {label && (
-        <span className="text-[10px] text-muted-foreground">{label}</span>
-      )}
-      <div className="flex items-center gap-1.5">
-        {copied ? (
-          <Check className="size-3 text-green-600" />
-        ) : (
-          <Copy className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-        )}
-        <span className="font-mono text-xs">
-          {copied ? 'Copied!' : hex.toUpperCase()}
-        </span>
-      </div>
-      <span className="font-mono text-[10px] text-muted-foreground">
-        rgb({r}, {g}, {b})
+      <span className="text-center font-mono text-xs">
+        {copied ? 'Copied!' : displayValue}
       </span>
     </button>
   )
@@ -78,6 +122,7 @@ export default function ColorExtractorPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [colorFormat, setColorFormat] = useState<ColorFormat>('hex')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -175,14 +220,17 @@ export default function ColorExtractorPage() {
     [sourceImage, runExtraction]
   )
 
-  const handleCopy = useCallback((hex: string, key: string) => {
-    navigator.clipboard.writeText(hex)
-    setCopiedKey(key)
-    if (copyTimerRef.current) {
-      clearTimeout(copyTimerRef.current)
-    }
-    copyTimerRef.current = setTimeout(() => setCopiedKey(null), 1500)
-  }, [])
+  const handleCopy = useCallback(
+    (color: Color, key: string) => {
+      navigator.clipboard.writeText(formatColor(color, colorFormat))
+      setCopiedKey(key)
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current)
+      }
+      copyTimerRef.current = setTimeout(() => setCopiedKey(null), 1500)
+    },
+    [colorFormat]
+  )
 
   const handleClear = useCallback(() => {
     setSourceFile(null)
@@ -204,7 +252,7 @@ export default function ColorExtractorPage() {
         title="Theme Color Extractor"
       />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         {/* Error */}
         {error && (
           <div
@@ -323,13 +371,19 @@ export default function ColorExtractorPage() {
           </div>
         )}
 
-        {/* Dominant color */}
+        {/* Color format switcher + Dominant color */}
         {dominant && (
           <div className="flex flex-col gap-3">
-            <h2 className="font-medium text-sm">主色调</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-medium text-sm">主色调</h2>
+              <ColorFormatSwitcher
+                onChange={setColorFormat}
+                value={colorFormat}
+              />
+            </div>
             <button
               className="group flex items-center gap-4 rounded-xl border bg-muted/20 p-4 transition-colors hover:bg-muted/50"
-              onClick={() => handleCopy(dominant.hex(), 'dominant')}
+              onClick={() => handleCopy(dominant, 'dominant')}
               type="button"
             >
               <div
@@ -352,11 +406,12 @@ export default function ColorExtractorPage() {
                 <span className="font-medium font-mono text-sm">
                   {copiedKey === 'dominant'
                     ? 'Copied!'
-                    : dominant.hex().toUpperCase()}
+                    : formatColor(dominant, colorFormat)}
                 </span>
                 <span className="font-mono text-muted-foreground text-xs">
-                  rgb({dominant.rgb().r}, {dominant.rgb().g}, {dominant.rgb().b}
-                  )
+                  {colorFormat !== 'hex' && dominant.hex().toUpperCase()}
+                  {colorFormat === 'hex' &&
+                    `rgb(${dominant.rgb().r}, ${dominant.rgb().g}, ${dominant.rgb().b})`}
                 </span>
                 <span className="text-muted-foreground text-xs">
                   {(dominant.proportion * 100).toFixed(1)}% 占比
@@ -378,8 +433,9 @@ export default function ColorExtractorPage() {
                 <ColorSwatch
                   color={color}
                   copied={copiedKey === `palette-${i}`}
+                  format={colorFormat}
                   key={color.hex()}
-                  onCopy={() => handleCopy(color.hex(), `palette-${i}`)}
+                  onCopy={() => handleCopy(color, `palette-${i}`)}
                 />
               ))}
             </div>
@@ -402,11 +458,9 @@ export default function ColorExtractorPage() {
                   <ColorSwatch
                     color={swatch.color}
                     copied={copiedKey === `swatch-${role}`}
+                    format={colorFormat}
                     key={role}
-                    label={SWATCH_LABELS[role]}
-                    onCopy={() =>
-                      handleCopy(swatch.color.hex(), `swatch-${role}`)
-                    }
+                    onCopy={() => handleCopy(swatch.color, `swatch-${role}`)}
                   />
                 )
               })}
