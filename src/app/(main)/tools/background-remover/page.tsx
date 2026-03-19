@@ -111,6 +111,42 @@ export default function BackgroundRemoverPage() {
     [handleFile]
   )
 
+  const workerRef = useRef<Worker | null>(null)
+
+  // Cleanup worker on unmount
+  useEffect(() => {
+    return () => {
+      workerRef.current?.terminate()
+    }
+  }, [])
+
+  const handleWorkerMessage = useCallback(
+    (
+      resolve: (blob: Blob) => void,
+      reject: (err: Error) => void,
+      e: MessageEvent
+    ) => {
+      const { type } = e.data
+      if (type === 'progress') {
+        const { key, current, total } = e.data
+        if (key.includes('fetch')) {
+          // fetch 阶段占前 50%，按字节计算
+          setProgress(Math.round((current / total) * 50))
+          setProgressStage('加载模型中...')
+        } else if (key.includes('compute')) {
+          // compute 阶段占后 50%，共 4 步 (0/4 → 4/4)
+          setProgress(50 + Math.round((current / total) * 50))
+          setProgressStage('处理图片中...')
+        }
+      } else if (type === 'result') {
+        resolve(e.data.blob)
+      } else if (type === 'error') {
+        reject(new Error(e.data.message))
+      }
+    },
+    []
+  )
+
   const handleRemoveBackground = useCallback(async () => {
     if (!sourceFile) {
       return
@@ -121,18 +157,20 @@ export default function BackgroundRemoverPage() {
     setError(null)
 
     try {
-      const { removeBackground } = await import('@imgly/background-removal')
-      const blob = await removeBackground(sourceFile, {
-        progress: (key: string, current: number, total: number) => {
-          const pct = Math.round((current / total) * 100)
-          setProgress(pct)
-          if (key.includes('fetch')) {
-            setProgressStage('加载模型中...')
-          } else if (key.includes('compute')) {
-            setProgressStage('处理图片中...')
-          }
-        },
+      const worker = new Worker(new URL('./worker.ts', import.meta.url), {
+        type: 'module',
       })
+      workerRef.current?.terminate()
+      workerRef.current = worker
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        worker.onmessage = (e) => handleWorkerMessage(resolve, reject, e)
+        worker.onerror = (err) => {
+          reject(new Error(err.message || 'Worker 执行失败'))
+        }
+        worker.postMessage({ file: sourceFile })
+      })
+
       const url = URL.createObjectURL(blob)
       setResultBlob(blob)
       setResultUrl((prev) => {
