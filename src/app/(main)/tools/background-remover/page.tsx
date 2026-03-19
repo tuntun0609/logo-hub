@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Eraser, ImageIcon, Loader2, Upload, X } from 'lucide-react'
+import { Download, Eraser, Loader2, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ToolHeader } from '@/components/tool-header'
 import { Button } from '@/components/ui/button'
@@ -226,7 +226,7 @@ export default function BackgroundRemoverPage() {
     <div className="flex flex-col gap-6">
       <ToolHeader title="Background Remover" />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <div className={cn('mx-auto my-12 flex w-full max-w-2xl flex-col gap-8')}>
         {/* Error */}
         {error && (
           <div
@@ -238,36 +238,14 @@ export default function BackgroundRemoverPage() {
         )}
 
         {/* Upload zone */}
-        {sourceFile ? (
-          <div className="flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3">
-            <ImageIcon className="size-5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-sm">{sourceFile.name}</p>
-              <p className="text-muted-foreground text-xs">
-                {sourceImage &&
-                  `${sourceImage.naturalWidth} × ${sourceImage.naturalHeight}`}
-                {' · '}
-                {(sourceFile.size / 1024).toFixed(1)} KB
-              </p>
-            </div>
-            <Button
-              aria-label="移除图片"
-              disabled={isProcessing}
-              onClick={handleClear}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ) : (
+        {!sourceFile && (
           <button
             aria-label="上传图片文件"
             className={cn(
-              'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 transition-colors',
+              'group relative flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-12 py-24 transition-all duration-200 ease-in-out',
               isDragging
-                ? 'border-primary bg-primary/5'
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                ? 'scale-[0.99] border-primary bg-primary/5'
+                : 'border-muted-foreground/20 bg-muted/10 hover:border-muted-foreground/40 hover:bg-muted/20'
             )}
             onClick={() => fileInputRef.current?.click()}
             onDragLeave={handleDragLeave}
@@ -275,11 +253,25 @@ export default function BackgroundRemoverPage() {
             onDrop={handleDrop}
             type="button"
           >
-            <Upload className="size-8 text-muted-foreground" />
-            <div className="text-center">
-              <p className="font-medium text-sm">拖拽图片到此处或点击上传</p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                支持 PNG, JPG, SVG, WEBP, GIF（≤10MB）
+            <div
+              className={cn(
+                'flex size-12 items-center justify-center rounded-full transition-colors duration-200',
+                isDragging
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-background text-muted-foreground shadow-sm group-hover:bg-muted/50'
+              )}
+            >
+              <Upload className="size-6" />
+            </div>
+            <div className="flex flex-col items-center gap-1 text-center">
+              <p className="font-medium text-base text-foreground">
+                点击上传{' '}
+                <span className="font-normal text-muted-foreground">
+                  或拖拽图片到此处
+                </span>
+              </p>
+              <p className="text-muted-foreground text-sm">
+                支持 PNG, JPG, SVG
               </p>
             </div>
           </button>
@@ -293,26 +285,56 @@ export default function BackgroundRemoverPage() {
           type="file"
         />
 
-        {/* Action button */}
+        {/* Preview and Action */}
         {sourceFile && !resultUrl && (
-          <div className="flex flex-col gap-2">
-            <Button
-              className="w-full sm:w-auto sm:self-start"
-              disabled={isProcessing}
-              onClick={handleRemoveBackground}
+          <div className="flex flex-col items-center gap-8">
+            <div
+              className="w-full max-w-2xl rounded-2xl border p-6"
+              style={CHECKERBOARD_STYLE}
             >
-              {isProcessing ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Eraser className="size-4" />
+              {previewUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt="原图预览"
+                  className="max-h-[500px] w-full rounded-xl object-contain"
+                  height={sourceImage?.naturalHeight ?? 1}
+                  src={previewUrl}
+                  width={sourceImage?.naturalWidth ?? 1}
+                />
               )}
-              {isProcessing ? progressStage || '处理中...' : '移除背景'}
-            </Button>
-            {!isProcessing && (
-              <p className="text-muted-foreground text-xs">
-                首次使用需下载约 45MB 模型文件
-              </p>
-            )}
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={isProcessing}
+                  onClick={handleClear}
+                  size="lg"
+                  variant="outline"
+                >
+                  重新选择
+                </Button>
+                <Button
+                  className="w-full min-w-[160px] sm:w-auto"
+                  disabled={isProcessing}
+                  onClick={handleRemoveBackground}
+                  size="lg"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Eraser className="size-4" />
+                  )}
+                  {isProcessing ? progressStage || '处理中...' : '移除背景'}
+                </Button>
+              </div>
+              {!isProcessing && (
+                <p className="text-center text-muted-foreground text-xs">
+                  首次使用需下载约 45MB 模型文件
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -333,51 +355,68 @@ export default function BackgroundRemoverPage() {
 
         {/* Before / After comparison */}
         {resultUrl && previewUrl && (
-          <div className="flex flex-col gap-3">
-            <h2 className="font-medium text-sm">对比预览</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <span className="text-muted-foreground text-xs">原图</span>
-                <div className="overflow-hidden rounded-lg border bg-muted/20 p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt="原图"
-                    className="max-h-64 w-full object-contain"
-                    height={sourceImage?.naturalHeight ?? 1}
-                    src={previewUrl}
-                    width={sourceImage?.naturalWidth ?? 1}
-                  />
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex w-full flex-col gap-3">
+              <h2 className="text-center font-medium text-sm">对比预览</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <span className="text-center text-muted-foreground text-xs">
+                    原图
+                  </span>
+                  <div
+                    className="rounded-2xl border p-2"
+                    style={CHECKERBOARD_STYLE}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt="原图"
+                      className="max-h-64 w-full rounded-xl object-contain"
+                      height={sourceImage?.naturalHeight ?? 1}
+                      src={previewUrl}
+                      width={sourceImage?.naturalWidth ?? 1}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-muted-foreground text-xs">效果</span>
-                <div
-                  className="overflow-hidden rounded-lg border p-2"
-                  style={CHECKERBOARD_STYLE}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt="去除背景效果"
-                    className="max-h-64 w-full object-contain"
-                    height={sourceImage?.naturalHeight ?? 1}
-                    src={resultUrl}
-                    width={sourceImage?.naturalWidth ?? 1}
-                  />
+                <div className="flex flex-col gap-2">
+                  <span className="text-center text-muted-foreground text-xs">
+                    效果
+                  </span>
+                  <div
+                    className="rounded-2xl border p-2"
+                    style={CHECKERBOARD_STYLE}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt="去除背景效果"
+                      className="max-h-64 w-full rounded-xl object-contain"
+                      height={sourceImage?.naturalHeight ?? 1}
+                      src={resultUrl}
+                      width={sourceImage?.naturalWidth ?? 1}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Download */}
-        {resultUrl && (
-          <Button
-            className="w-full sm:w-auto sm:self-start"
-            onClick={handleDownload}
-          >
-            <Download className="size-4" />
-            下载 PNG
-          </Button>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={handleClear}
+                size="lg"
+                variant="outline"
+              >
+                处理新图片
+              </Button>
+              <Button
+                className="w-full min-w-[160px] sm:w-auto"
+                onClick={handleDownload}
+                size="lg"
+              >
+                <Download className="size-4" />
+                下载 PNG
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
