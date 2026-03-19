@@ -61,9 +61,8 @@ const toolGroups: ToolGroup[] = [
       },
       {
         name: 'Background Remover',
-        description: '一键移除 Logo 背景',
-        href: 'https://remove.bg',
-        isExternal: true,
+        description: '纯浏览器端 AI 一键移除图片背景',
+        href: '/tools/background-remover',
       },
       {
         name: 'Logo Resize',
