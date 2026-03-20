@@ -44,6 +44,24 @@ const toolGroups: ToolGroup[] = [
         href: 'https://logomaster.ai',
         isExternal: true,
       },
+      {
+        name: 'Canva',
+        description: '模板化 Logo、名片与社交媒体物料',
+        href: 'https://www.canva.com',
+        isExternal: true,
+      },
+      {
+        name: 'DesignEvo',
+        description: '海量模板在线 Logo 编辑器',
+        href: 'https://www.designevo.com',
+        isExternal: true,
+      },
+      {
+        name: 'Figma',
+        description: '协作式矢量与界面设计，适合精修标识',
+        href: 'https://www.figma.com',
+        isExternal: true,
+      },
     ],
   },
   {
@@ -69,6 +87,35 @@ const toolGroups: ToolGroup[] = [
         description: '导入图片，按固定比例、自由比例或固定尺寸裁切并导出',
         href: '/tools/logo-resize',
       },
+      {
+        name: 'Image to SVG',
+        description: '将位图 Logo 描摹转换为可缩放的 SVG 矢量图',
+        href: '/tools/image-to-svg',
+      },
+      {
+        name: 'SVGOMG',
+        description: '在浏览器中精简、优化 SVG 代码体积',
+        href: 'https://jakearchibald.github.io/svgomg/',
+        isExternal: true,
+      },
+      {
+        name: 'Vectorizer.AI',
+        description: '将位图 Logo 转为可缩放矢量（需留意授权与用途）',
+        href: 'https://vectorizer.ai',
+        isExternal: true,
+      },
+      {
+        name: 'RealFaviconGenerator',
+        description: '为多平台生成 Favicon、Apple Touch 与 PWA 图标',
+        href: 'https://realfavicongenerator.net',
+        isExternal: true,
+      },
+      {
+        name: 'Squoosh',
+        description: '本地处理图片压缩、格式转换与尺寸调整',
+        href: 'https://squoosh.app',
+        isExternal: true,
+      },
     ],
   },
   {
@@ -91,6 +138,18 @@ const toolGroups: ToolGroup[] = [
         href: 'https://color.adobe.com',
         isExternal: true,
       },
+      {
+        name: 'Khroma',
+        description: '基于偏好的 AI 配色学习与生成',
+        href: 'https://khroma.co',
+        isExternal: true,
+      },
+      {
+        name: 'Huemint',
+        description: '面向界面与品牌的 AI 配色灵感',
+        href: 'https://huemint.com',
+        isExternal: true,
+      },
     ],
   },
   {
@@ -106,6 +165,41 @@ const toolGroups: ToolGroup[] = [
         name: 'Font Pair',
         description: '字体搭配灵感与建议',
         href: 'https://www.fontpair.co',
+        isExternal: true,
+      },
+      {
+        name: 'Adobe Fonts',
+        description: '专业字体库与授权说明（常与 Creative Cloud 联动）',
+        href: 'https://fonts.adobe.com',
+        isExternal: true,
+      },
+      {
+        name: 'Font Squirrel',
+        description: '可商用手字体筛选与 Webfont 生成',
+        href: 'https://www.fontsquirrel.com',
+        isExternal: true,
+      },
+    ],
+  },
+  {
+    label: '灵感与参考',
+    tools: [
+      {
+        name: 'Dribbble',
+        description: '设计师作品与标识视觉趋势',
+        href: 'https://dribbble.com',
+        isExternal: true,
+      },
+      {
+        name: 'Behance',
+        description: '完整品牌案例与作品集展示',
+        href: 'https://www.behance.net',
+        isExternal: true,
+      },
+      {
+        name: 'Brand New',
+        description: '知名品牌换标与视觉识别评析',
+        href: 'https://www.underconsideration.com/brandnew/',
         isExternal: true,
       },
     ],
