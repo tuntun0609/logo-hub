@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Eraser, Loader2, Upload } from 'lucide-react'
+import { Download, Eraser, GripVertical, Loader2, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ToolHeader } from '@/components/tool-header'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,9 @@ export default function BackgroundRemoverPage() {
   const [progressStage, setProgressStage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [sliderPos, setSliderPos] = useState(50)
+  const [isDraggingSlider, setIsDraggingSlider] = useState(false)
+  const comparisonRef = useRef<HTMLDivElement>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -217,9 +220,43 @@ export default function BackgroundRemoverPage() {
     setError(null)
     setProgress(0)
     setProgressStage('')
+    setSliderPos(50)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+  }, [])
+
+  const updateSliderPos = useCallback((clientX: number) => {
+    const rect = comparisonRef.current?.getBoundingClientRect()
+    if (!rect) {
+      return
+    }
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width))
+    setSliderPos((x / rect.width) * 100)
+  }, [])
+
+  const handleSliderPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault()
+      setIsDraggingSlider(true)
+      comparisonRef.current?.setPointerCapture(e.pointerId)
+      updateSliderPos(e.clientX)
+    },
+    [updateSliderPos]
+  )
+
+  const handleSliderPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDraggingSlider) {
+        return
+      }
+      updateSliderPos(e.clientX)
+    },
+    [isDraggingSlider, updateSliderPos]
+  )
+
+  const handleSliderPointerUp = useCallback(() => {
+    setIsDraggingSlider(false)
   }, [])
 
   return (
@@ -289,18 +326,29 @@ export default function BackgroundRemoverPage() {
         {sourceFile && !resultUrl && (
           <div className="flex flex-col items-center gap-8">
             <div
-              className="w-full max-w-2xl rounded-2xl border p-6"
+              className="relative w-full max-w-2xl overflow-hidden rounded-2xl border"
               style={CHECKERBOARD_STYLE}
             >
               {previewUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   alt="原图预览"
-                  className="max-h-[500px] w-full rounded-xl object-contain"
+                  className="max-h-[500px] w-full object-contain"
                   height={sourceImage?.naturalHeight ?? 1}
                   src={previewUrl}
                   width={sourceImage?.naturalWidth ?? 1}
                 />
+              )}
+              {isProcessing && (
+                <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                  <div
+                    className="absolute inset-y-0 w-[60%] animate-[sweep_2s_ease-in-out_infinite]"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.08) 80%, transparent 100%)',
+                    }}
+                  />
+                </div>
               )}
             </div>
 
@@ -316,17 +364,27 @@ export default function BackgroundRemoverPage() {
                   重新选择
                 </Button>
                 <Button
-                  className="w-full min-w-[160px] sm:w-auto"
+                  className="relative w-full min-w-[200px] overflow-hidden sm:w-auto"
                   disabled={isProcessing}
                   onClick={handleRemoveBackground}
                   size="lg"
                 >
-                  {isProcessing ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Eraser className="size-4" />
+                  {isProcessing && (
+                    <div
+                      className="absolute inset-0 bg-primary-foreground/15 transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
                   )}
-                  {isProcessing ? progressStage || '处理中...' : '移除背景'}
+                  <span className="relative flex items-center gap-2">
+                    {isProcessing ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Eraser className="size-4" />
+                    )}
+                    {isProcessing
+                      ? `${progressStage || '处理中...'} ${progress}%`
+                      : '移除背景'}
+                  </span>
                 </Button>
               </div>
               {!isProcessing && (
@@ -338,63 +396,68 @@ export default function BackgroundRemoverPage() {
           </div>
         )}
 
-        {/* Progress bar */}
-        {isProcessing && (
-          <div className="flex flex-col gap-2">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-center text-muted-foreground text-xs">
-              {progressStage} {progress}%
-            </p>
-          </div>
-        )}
-
-        {/* Before / After comparison */}
+        {/* Before / After comparison slider */}
         {resultUrl && previewUrl && (
           <div className="flex flex-col items-center gap-6">
             <div className="flex w-full flex-col gap-3">
               <h2 className="text-center font-medium text-sm">对比预览</h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <span className="text-center text-muted-foreground text-xs">
-                    原图
-                  </span>
-                  <div
-                    className="rounded-2xl border p-2"
-                    style={CHECKERBOARD_STYLE}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt="原图"
-                      className="max-h-64 w-full rounded-xl object-contain"
-                      height={sourceImage?.naturalHeight ?? 1}
-                      src={previewUrl}
-                      width={sourceImage?.naturalWidth ?? 1}
-                    />
+              <div
+                className="relative w-full cursor-col-resize select-none overflow-hidden rounded-2xl border"
+                onPointerDown={handleSliderPointerDown}
+                onPointerMove={handleSliderPointerMove}
+                onPointerUp={handleSliderPointerUp}
+                ref={comparisonRef}
+                style={CHECKERBOARD_STYLE}
+              >
+                {/* Result (bottom layer, full width) */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt="去除背景效果"
+                  className="block max-h-[500px] w-full object-contain"
+                  draggable={false}
+                  height={sourceImage?.naturalHeight ?? 1}
+                  src={resultUrl}
+                  width={sourceImage?.naturalWidth ?? 1}
+                />
+
+                {/* Original (top layer, clipped by slider) */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    alt="原图"
+                    className="block max-h-[500px] w-full object-contain"
+                    draggable={false}
+                    height={sourceImage?.naturalHeight ?? 1}
+                    src={previewUrl}
+                    width={sourceImage?.naturalWidth ?? 1}
+                  />
+                </div>
+
+                {/* Slider handle */}
+                <div
+                  className="absolute inset-y-0"
+                  style={{ left: `${sliderPos}%` }}
+                >
+                  <div className="absolute inset-y-0 -translate-x-1/2">
+                    <div className="h-full w-0.5 bg-white shadow-[0_0_4px_rgba(0,0,0,0.4)]" />
+                  </div>
+                  <div className="absolute top-1/2 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/90 shadow-lg backdrop-blur-sm">
+                    <GripVertical className="size-3.5 text-muted-foreground" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <span className="text-center text-muted-foreground text-xs">
-                    效果
-                  </span>
-                  <div
-                    className="rounded-2xl border p-2"
-                    style={CHECKERBOARD_STYLE}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt="去除背景效果"
-                      className="max-h-64 w-full rounded-xl object-contain"
-                      height={sourceImage?.naturalHeight ?? 1}
-                      src={resultUrl}
-                      width={sourceImage?.naturalWidth ?? 1}
-                    />
-                  </div>
-                </div>
+
+                {/* Labels */}
+                <span className="absolute top-3 left-3 rounded-full bg-black/50 px-2.5 py-1 font-medium text-white text-xs backdrop-blur-sm">
+                  原图
+                </span>
+                <span className="absolute top-3 right-3 rounded-full bg-black/50 px-2.5 py-1 font-medium text-white text-xs backdrop-blur-sm">
+                  效果
+                </span>
               </div>
             </div>
 
