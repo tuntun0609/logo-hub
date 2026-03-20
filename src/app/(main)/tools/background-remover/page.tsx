@@ -32,7 +32,7 @@ export default function BackgroundRemoverPage() {
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [sliderPos, setSliderPos] = useState(50)
-  const [isDraggingSlider, setIsDraggingSlider] = useState(false)
+  const isDraggingSliderRef = useRef(false)
   const comparisonRef = useRef<HTMLDivElement>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -235,10 +235,19 @@ export default function BackgroundRemoverPage() {
     setSliderPos((x / rect.width) * 100)
   }, [])
 
+  const endSliderDrag = useCallback((e: React.PointerEvent) => {
+    isDraggingSliderRef.current = false
+    const el = comparisonRef.current
+    if (el?.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId)
+    }
+  }, [])
+
   const handleSliderPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      // 避免触摸被当成页面滚动，且需在首帧 move 前同步标记拖动（state 会晚一拍）
       e.preventDefault()
-      setIsDraggingSlider(true)
+      isDraggingSliderRef.current = true
       comparisonRef.current?.setPointerCapture(e.pointerId)
       updateSliderPos(e.clientX)
     },
@@ -247,16 +256,30 @@ export default function BackgroundRemoverPage() {
 
   const handleSliderPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!isDraggingSlider) {
+      if (!isDraggingSliderRef.current) {
         return
       }
       updateSliderPos(e.clientX)
     },
-    [isDraggingSlider, updateSliderPos]
+    [updateSliderPos]
   )
 
-  const handleSliderPointerUp = useCallback(() => {
-    setIsDraggingSlider(false)
+  const handleSliderPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      endSliderDrag(e)
+    },
+    [endSliderDrag]
+  )
+
+  const handleSliderPointerCancel = useCallback(
+    (e: React.PointerEvent) => {
+      endSliderDrag(e)
+    },
+    [endSliderDrag]
+  )
+
+  const handleSliderLostPointerCapture = useCallback(() => {
+    isDraggingSliderRef.current = false
   }, [])
 
   return (
@@ -402,7 +425,9 @@ export default function BackgroundRemoverPage() {
             <div className="flex w-full flex-col gap-3">
               <h2 className="text-center font-medium text-sm">对比预览</h2>
               <div
-                className="relative w-full cursor-col-resize select-none overflow-hidden rounded-2xl border"
+                className="relative w-full cursor-col-resize touch-none select-none overflow-hidden rounded-2xl border"
+                onLostPointerCapture={handleSliderLostPointerCapture}
+                onPointerCancel={handleSliderPointerCancel}
                 onPointerDown={handleSliderPointerDown}
                 onPointerMove={handleSliderPointerMove}
                 onPointerUp={handleSliderPointerUp}
