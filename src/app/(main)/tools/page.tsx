@@ -66,7 +66,7 @@ const toolGroups: ToolGroup[] = [
       },
       {
         name: 'Logo Resize',
-        description: 'Logo 尺寸批量调整工具',
+        description: '导入图片，按固定比例、自由比例或固定尺寸裁切并导出',
         href: '/tools/logo-resize',
       },
     ],
