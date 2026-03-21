@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { toast } from 'sonner'
 import { optimize } from 'svgo/browser'
 import type { SvgEditorHandle } from '@/components/svg-viewer/svg-editor'
 import { getByteSize, prettifySvg } from '@/lib/svg-utils'
@@ -23,6 +24,9 @@ import {
   makeDefaultCleanOptions,
 } from './cleaning'
 import type { BgMode, CleanResult } from './types'
+
+const SVG_FILE_NAME_RE = /\.svg$/i
+const INVALID_FILE_MESSAGE = '仅支持 SVG 文件，请重新选择或拖入 .svg 文件。'
 
 export function useSvgViewer() {
   const [svgCode, setSvgCode] = useState('')
@@ -53,7 +57,10 @@ export function useSvgViewer() {
 
   const loadSvgFile = useCallback(
     (file: File) => {
-      if (file.type !== 'image/svg+xml' && !file.name.endsWith('.svg')) {
+      if (file.type !== 'image/svg+xml' && !SVG_FILE_NAME_RE.test(file.name)) {
+        toast.error(INVALID_FILE_MESSAGE, {
+          id: 'svg-viewer-invalid-file',
+        })
         return
       }
 
