@@ -2,6 +2,7 @@
 
 import {
   Check,
+  ChevronDown,
   Code2,
   Copy,
   Download,
@@ -20,12 +21,53 @@ import {
   type SvgEditorHandle,
 } from '@/components/svg-viewer/svg-editor'
 import { ToolHeader } from '@/components/tool-header'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { formatBytes, getByteSize, prettifySvg } from '@/lib/svg-utils'
 import { cn } from '@/lib/utils'
 
 type BgMode = 'checkerboard' | 'dark' | 'white'
+
+const CLEAN_PLUGINS = [
+  {
+    group: '元数据',
+    items: [
+      { key: 'removeComments', label: '移除注释' },
+      { key: 'removeMetadata', label: '移除元数据' },
+      { key: 'removeEditorsNSData', label: '移除编辑器数据' },
+      { key: 'removeDesc', label: '移除描述' },
+      { key: 'removeTitle', label: '移除标题' },
+    ],
+  },
+  {
+    group: '元素',
+    items: [
+      { key: 'removeEmptyAttrs', label: '移除空属性' },
+      { key: 'removeEmptyContainers', label: '移除空容器' },
+      { key: 'removeHiddenElems', label: '移除隐藏元素' },
+      { key: 'removeUselessDefs', label: '移除无用定义' },
+      { key: 'removeUselessStrokeAndFill', label: '移除无用描边填充' },
+    ],
+  },
+  { group: 'ID', items: [{ key: 'cleanupIds', label: '清理 ID' }] },
+] as const
+
+type CleanPluginKey = (typeof CLEAN_PLUGINS)[number]['items'][number]['key']
+
+const ALL_CLEAN_KEYS = CLEAN_PLUGINS.flatMap((g) => g.items.map((i) => i.key))
+
+function makeDefaultCleanOptions(): Record<CleanPluginKey, boolean> {
+  return Object.fromEntries(ALL_CLEAN_KEYS.map((k) => [k, true])) as Record<
+    CleanPluginKey,
+    boolean
+  >
+}
 
 export default function SvgViewerPage() {
   const [svgCode, setSvgCode] = useState('')
@@ -37,8 +79,12 @@ export default function SvgViewerPage() {
   const [copied, setCopied] = useState(false)
   const [bgMode, setBgMode] = useState<BgMode>('checkerboard')
   const [isDragging, setIsDragging] = useState(false)
+  const [cleanOptions, setCleanOptions] = useState(makeDefaultCleanOptions)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef<SvgEditorHandle>(null)
+
+  const allCleanEnabled = ALL_CLEAN_KEYS.every((k) => cleanOptions[k])
+  const noneCleanEnabled = ALL_CLEAN_KEYS.every((k) => !cleanOptions[k])
 
   const showEditor = editorOpen || svgCode.trim().length > 0
   const hasSvg = svgCode.trim().length > 0
@@ -133,28 +179,20 @@ export default function SvgViewerPage() {
     if (!svgCode.trim()) {
       return
     }
+    const enabledPlugins = ALL_CLEAN_KEYS.filter((k) => cleanOptions[k])
+    if (enabledPlugins.length === 0) {
+      return
+    }
     try {
       const result = optimize(svgCode, {
         multipass: false,
-        plugins: [
-          'removeComments',
-          'removeMetadata',
-          'removeEditorsNSData',
-          'removeEmptyAttrs',
-          'removeEmptyContainers',
-          'removeHiddenElems',
-          'removeUselessDefs',
-          'removeUselessStrokeAndFill',
-          'cleanupIds',
-          'removeDesc',
-          'removeTitle',
-        ],
+        plugins: enabledPlugins,
       })
       setSvgCode(result.data)
     } catch {
       // Clean failed — keep original
     }
-  }, [svgCode])
+  }, [svgCode, cleanOptions])
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(svgCode).then(() => {
@@ -292,7 +330,8 @@ export default function SvgViewerPage() {
                   格式化
                 </Button>
                 <Button
-                  disabled={!hasSvg}
+                  className="rounded-r-none pr-1"
+                  disabled={!hasSvg || noneCleanEnabled}
                   onClick={handleClean}
                   size="xs"
                   variant="ghost"
@@ -300,6 +339,61 @@ export default function SvgViewerPage() {
                   <Eraser className="size-3.5" />
                   清理
                 </Button>
+                <Popover>
+                  <PopoverTrigger
+                    className={cn(
+                      buttonVariants({ size: 'icon-xs', variant: 'ghost' }),
+                      'rounded-l-none px-0.5'
+                    )}
+                    disabled={!hasSvg}
+                  >
+                    <ChevronDown className="size-3" />
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-56 p-2">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="font-medium text-xs">清理选项</span>
+                      <button
+                        className="text-muted-foreground text-xs hover:text-foreground"
+                        onClick={() => {
+                          const next = !allCleanEnabled
+                          setCleanOptions(
+                            Object.fromEntries(
+                              ALL_CLEAN_KEYS.map((k) => [k, next])
+                            ) as Record<CleanPluginKey, boolean>
+                          )
+                        }}
+                        type="button"
+                      >
+                        {allCleanEnabled ? '全不选' : '全选'}
+                      </button>
+                    </div>
+                    {CLEAN_PLUGINS.map((group) => (
+                      <div key={group.group}>
+                        <p className="mt-1.5 mb-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+                          {group.group}
+                        </p>
+                        {group.items.map((item) => (
+                          <div
+                            className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1 hover:bg-muted"
+                            key={item.key}
+                          >
+                            <span className="text-xs">{item.label}</span>
+                            <Switch
+                              checked={cleanOptions[item.key]}
+                              onCheckedChange={(checked) =>
+                                setCleanOptions((prev) => ({
+                                  ...prev,
+                                  [item.key]: checked,
+                                }))
+                              }
+                              size="sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </PopoverContent>
+                </Popover>
               </div>
               <SvgEditor
                 onChange={handleCodeChange}

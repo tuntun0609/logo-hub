@@ -39,24 +39,27 @@ export function SvgPreview({ bgMode, onBgModeChange, svg }: SvgPreviewProps) {
   const isPanning = useRef(false)
   const panStart = useRef({ x: 0, y: 0 })
   const panOrigin = useRef({ x: 0, y: 0 })
+  const hasSvg = svg.trim().length > 0
 
   // Inject SVG HTML
   useEffect(() => {
     if (svgWrapRef.current) {
-      svgWrapRef.current.innerHTML = svg || ''
+      svgWrapRef.current.innerHTML = hasSvg ? svg : ''
     }
-  }, [svg])
+  }, [hasSvg, svg])
 
   // Fit to view when SVG changes
   useLayoutEffect(() => {
-    if (!svg) {
+    if (!hasSvg) {
+      setZoom(1)
+      setPan({ x: 0, y: 0 })
       return
     }
     // Small delay to let SVG render
     const timer = setTimeout(() => fitToView(), 30)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [svg])
+  }, [hasSvg, svg])
 
   const fitToView = useCallback(() => {
     const container = containerRef.current
@@ -241,7 +244,7 @@ export function SvgPreview({ bgMode, onBgModeChange, svg }: SvgPreviewProps) {
       <div
         className={cn(
           'relative flex-1 touch-none overflow-hidden overscroll-contain',
-          isPanning.current ? 'cursor-grabbing' : 'cursor-grab',
+          hasSvg && (isPanning.current ? 'cursor-grabbing' : 'cursor-grab'),
           bgMode === 'checkerboard' && 'bg-checkerboard',
           bgMode === 'white' && 'bg-white',
           bgMode === 'dark' && 'bg-neutral-900'
@@ -252,15 +255,17 @@ export function SvgPreview({ bgMode, onBgModeChange, svg }: SvgPreviewProps) {
         onPointerUp={endPan}
         ref={containerRef}
       >
-        {svg ? (
-          <div
-            className="absolute top-1/2 left-1/2 origin-center [&_svg]:block"
-            ref={svgWrapRef}
-            style={{
-              transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            }}
-          />
-        ) : (
+        <div
+          className={cn(
+            'absolute top-1/2 left-1/2 origin-center [&_svg]:block',
+            !hasSvg && 'hidden'
+          )}
+          ref={svgWrapRef}
+          style={{
+            transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          }}
+        />
+        {!hasSvg && (
           <div className="flex h-full items-center justify-center">
             <p className="text-muted-foreground text-sm">暂无预览</p>
           </div>

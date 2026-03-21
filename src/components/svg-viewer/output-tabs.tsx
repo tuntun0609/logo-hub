@@ -36,6 +36,8 @@ interface OutputTabsProps {
 
 export function OutputTabs({ bgMode, onBgModeChange, svg }: OutputTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab>('preview')
+  const hasSvg = svg.trim().length > 0
+  const safeSvg = hasSvg ? svg : ''
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-muted/30">
@@ -64,13 +66,13 @@ export function OutputTabs({ bgMode, onBgModeChange, svg }: OutputTabsProps) {
           <SvgPreview
             bgMode={bgMode}
             onBgModeChange={onBgModeChange}
-            svg={svg}
+            svg={safeSvg}
           />
         )}
-        {activeTab === 'react' && <ReactJsxTab svg={svg} />}
-        {activeTab === 'react-native' && <ReactNativeTab svg={svg} />}
-        {activeTab === 'png' && <PngTab svg={svg} />}
-        {activeTab === 'data-uri' && <DataUriTab svg={svg} />}
+        {activeTab === 'react' && <ReactJsxTab svg={safeSvg} />}
+        {activeTab === 'react-native' && <ReactNativeTab svg={safeSvg} />}
+        {activeTab === 'png' && <PngTab svg={safeSvg} />}
+        {activeTab === 'data-uri' && <DataUriTab svg={safeSvg} />}
       </div>
     </div>
   )
