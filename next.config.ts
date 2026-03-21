@@ -1,8 +1,13 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+  turbopack: {
+    resolveAlias: {
+      fs: { browser: './src/lib/noop.js' },
+      path: { browser: './src/lib/noop.js' },
+    },
+  },
   async headers() {
     return [
       {

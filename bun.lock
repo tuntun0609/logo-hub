@@ -12,6 +12,7 @@
         "clsx": "^2.1.1",
         "colorthief": "^3.3.1",
         "convex": "^1.32.0",
+        "esm-potrace-wasm": "^0.4.1",
         "imagetracerjs": "^1.2.6",
         "lucide-react": "^0.577.0",
         "motion": "^12.36.0",
@@ -553,6 +554,8 @@
     "escalade": ["escalade@3.2.0", "https://registry.npmmirror.com/escalade/-/escalade-3.2.0.tgz", {}, "sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA=="],
 
     "escape-html": ["escape-html@1.0.3", "https://registry.npmmirror.com/escape-html/-/escape-html-1.0.3.tgz", {}, "sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow=="],
+
+    "esm-potrace-wasm": ["esm-potrace-wasm@0.4.1", "https://registry.npmmirror.com/esm-potrace-wasm/-/esm-potrace-wasm-0.4.1.tgz", {}, "sha512-XLVQ7zRm0tFeiMnEX4wQJBjGlIVYyvlD98caDtR/sQoL27y+M1Q5oy8+EmIyLZQ+2vPTygEkg3aa0EeYoj8gww=="],
 
     "esprima": ["esprima@4.0.1", "https://registry.npmmirror.com/esprima/-/esprima-4.0.1.tgz", { "bin": { "esparse": "./bin/esparse.js", "esvalidate": "./bin/esvalidate.js" } }, "sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A=="],
 

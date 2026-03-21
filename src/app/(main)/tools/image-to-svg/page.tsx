@@ -30,18 +30,56 @@ const FILE_EXTENSION_REGEX = /\.[^.]+$/
 /** 限制长边，避免主线程长时间卡顿或内存过大 */
 const MAX_TRACE_SIDE = 1600
 
-const PRESETS: { id: string; label: string; description: string }[] = [
-  { id: 'default', label: '默认', description: '通用平衡' },
+type Engine = 'imagetracer' | 'potrace'
+
+const ENGINES: { value: Engine; label: string; description: string }[] = [
   {
-    id: 'posterized2',
+    value: 'imagetracer',
+    label: 'ImageTracer',
+    description: '彩色描摹，多种预设',
+  },
+  {
+    value: 'potrace',
+    label: 'Potrace',
+    description: '经典矢量化算法，支持黑白/彩色',
+  },
+]
+
+const IMAGETRACER_PRESETS: {
+  value: string
+  label: string
+  description: string
+}[] = [
+  { value: 'default', label: '默认', description: '通用平衡' },
+  {
+    value: 'posterized2',
     label: '海报色（4 色）',
     description: '色块少、边缘柔和',
   },
-  { id: 'curvy', label: '曲线', description: '更圆润的路径' },
-  { id: 'sharp', label: '锐利', description: '更利落的转角' },
-  { id: 'detailed', label: '精细', description: '更多颜色与细节' },
-  { id: 'grayscale', label: '灰度', description: '黑白灰分层' },
-  { id: 'artistic1', label: '艺术 1', description: '描边 + 模糊感' },
+  { value: 'curvy', label: '曲线', description: '更圆润的路径' },
+  { value: 'sharp', label: '锐利', description: '更利落的转角' },
+  { value: 'detailed', label: '精细', description: '更多颜色与细节' },
+  { value: 'grayscale', label: '灰度', description: '黑白灰分层' },
+  { value: 'artistic1', label: '艺术 1', description: '描边 + 模糊感' },
+]
+
+const POTRACE_PRESETS: { value: string; label: string; description: string }[] =
+  [
+    { value: 'bw', label: '黑白', description: '经典双色矢量化' },
+    { value: 'color-2', label: '彩色（2 层）', description: '简洁色块' },
+    { value: 'color-4', label: '彩色（4 层）', description: '中等色阶' },
+    { value: 'color-6', label: '彩色（6 层）', description: '丰富色彩' },
+    { value: 'color-8', label: '彩色（8 层）', description: '高还原度' },
+  ]
+
+const POTRACE_TURN_POLICIES = [
+  { value: 0, label: '少数（Minority）' },
+  { value: 1, label: '多数（Majority）' },
+  { value: 2, label: '随机（Random）' },
+  { value: 3, label: '黑色优先' },
+  { value: 4, label: '白色优先' },
+  { value: 5, label: '右手（Right）' },
+  { value: 6, label: '左手（Left）' },
 ]
 
 function sliderFirst(
@@ -71,11 +109,38 @@ function imageToImageData(img: HTMLImageElement, maxSide: number): ImageData {
   return ctx.getImageData(0, 0, w, h)
 }
 
+function imageToCanvas(
+  img: HTMLImageElement,
+  maxSide: number
+): HTMLCanvasElement {
+  let w = img.naturalWidth
+  let h = img.naturalHeight
+  const scale = Math.min(1, maxSide / Math.max(w, h))
+  w = Math.max(1, Math.round(w * scale))
+  h = Math.max(1, Math.round(h * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('无法创建画布上下文')
+  }
+  ctx.drawImage(img, 0, 0, w, h)
+  return canvas
+}
+
+function parsePotracePrest(presetId: string) {
+  if (presetId === 'bw') {
+    return { extractcolors: false, posterizelevel: 1 }
+  }
+  const level = Number.parseInt(presetId.replace('color-', ''), 10) || 2
+  return { extractcolors: true, posterizelevel: level }
+}
+
 export default function ImageToSvgPage() {
   const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [sourceImage, setSourceImage] = useState<HTMLImageElement | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [preset, setPreset] = useState<string>('default')
   const [svgString, setSvgString] = useState<string | null>(null)
   const [svgPreviewUrl, setSvgPreviewUrl] = useState<string | null>(null)
   const [isConverting, setIsConverting] = useState(false)
@@ -85,12 +150,31 @@ export default function ImageToSvgPage() {
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [engine, setEngine] = useState<Engine>('imagetracer')
+
+  // ImageTracer state
+  const [itPreset, setItPreset] = useState('default')
   const [numberOfColors, setNumberOfColors] = useState(16)
   const [blurRadius, setBlurRadius] = useState(0)
   const [ltres, setLtres] = useState(1)
   const [qtres, setQtres] = useState(1)
 
+  // Potrace state
+  const [ptPreset, setPtPreset] = useState('bw')
+  const [turdsize, setTurdsize] = useState(2)
+  const [alphamax, setAlphamax] = useState(1)
+  const [opttolerance, setOpttolerance] = useState(0.2)
+  const [turnpolicy, setTurnpolicy] = useState(4)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const potraceRef = useRef<{
+    potrace: (
+      source: ImageBitmapSource,
+      options: Record<string, unknown>
+    ) => Promise<string>
+    init: () => Promise<void>
+    ready: boolean
+  } | null>(null)
 
   useEffect(() => {
     return () => {
@@ -173,24 +257,23 @@ export default function ImageToSvgPage() {
     [handleFile]
   )
 
-  const handleConvert = useCallback(async () => {
-    if (!sourceImage) {
-      return
+  const initPotrace = useCallback(async () => {
+    if (potraceRef.current?.ready) {
+      return potraceRef.current
     }
-    setError(null)
-    setIsConverting(true)
-    // 不清空 svgString：保留上一版预览高度，避免滚动条跳动
+    const mod = await import('esm-potrace-wasm')
+    await mod.init()
+    const ref = { potrace: mod.potrace, init: mod.init, ready: true }
+    potraceRef.current = ref
+    return ref
+  }, [])
 
-    await new Promise<void>((r) => {
-      requestAnimationFrame(() => r())
-    })
-
-    try {
-      const imageData = imageToImageData(sourceImage, MAX_TRACE_SIDE)
-
-      let options: string | ImageTracerOptions = preset
+  const traceWithImageTracer = useCallback(
+    (img: HTMLImageElement): string => {
+      const imageData = imageToImageData(img, MAX_TRACE_SIDE)
+      let options: string | ImageTracerOptions = itPreset
       if (showAdvanced) {
-        const base = ImageTracer.checkoptions(preset)
+        const base = ImageTracer.checkoptions(itPreset)
         options = {
           ...base,
           numberofcolors: numberOfColors,
@@ -199,23 +282,61 @@ export default function ImageToSvgPage() {
           qtres,
         }
       }
+      return ImageTracer.imagedataToSVG(imageData, options)
+    },
+    [blurRadius, itPreset, ltres, numberOfColors, qtres, showAdvanced]
+  )
 
-      const svg = ImageTracer.imagedataToSVG(imageData, options)
+  const traceWithPotrace = useCallback(
+    async (img: HTMLImageElement): Promise<string> => {
+      const pt = await initPotrace()
+      const canvas = imageToCanvas(img, MAX_TRACE_SIDE)
+      const presetOpts = parsePotracePrest(ptPreset)
+      const options: Record<string, unknown> = {
+        turdsize: showAdvanced ? turdsize : 2,
+        turnpolicy: showAdvanced ? turnpolicy : 4,
+        alphamax: showAdvanced ? alphamax : 1,
+        opticurve: 1,
+        opttolerance: showAdvanced ? opttolerance : 0.2,
+        pathonly: false,
+        ...presetOpts,
+      }
+      return pt.potrace(canvas, options)
+    },
+    [
+      alphamax,
+      initPotrace,
+      opttolerance,
+      ptPreset,
+      showAdvanced,
+      turdsize,
+      turnpolicy,
+    ]
+  )
+
+  const handleConvert = useCallback(async () => {
+    if (!sourceImage) {
+      return
+    }
+    setError(null)
+    setIsConverting(true)
+
+    await new Promise<void>((r) => {
+      requestAnimationFrame(() => r())
+    })
+
+    try {
+      const svg =
+        engine === 'imagetracer'
+          ? traceWithImageTracer(sourceImage)
+          : await traceWithPotrace(sourceImage)
       setSvgString(svg)
     } catch {
       setError('转换失败，请尝试其他图片或调整参数')
     } finally {
       setIsConverting(false)
     }
-  }, [
-    blurRadius,
-    ltres,
-    numberOfColors,
-    preset,
-    qtres,
-    showAdvanced,
-    sourceImage,
-  ])
+  }, [engine, sourceImage, traceWithImageTracer, traceWithPotrace])
 
   const handleDownload = useCallback(() => {
     if (!(svgString && sourceFile)) {
@@ -262,7 +383,7 @@ export default function ImageToSvgPage() {
     }
   }, [])
 
-  const syncSlidersFromPreset = useCallback((presetId: string) => {
+  const syncItSlidersFromPreset = useCallback((presetId: string) => {
     const full = ImageTracer.checkoptions(presetId)
     setNumberOfColors(full.numberofcolors ?? 16)
     setBlurRadius(full.blurradius ?? 0)
@@ -355,6 +476,38 @@ export default function ImageToSvgPage() {
                 ，描摹时长边不超过 {MAX_TRACE_SIDE}px
               </p>
 
+              {/* 引擎选择 */}
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-muted-foreground text-xs"
+                  htmlFor="trace-engine"
+                >
+                  描摹引擎
+                </label>
+                <Select
+                  items={ENGINES}
+                  onValueChange={(v) => {
+                    if (v) {
+                      setEngine(v as Engine)
+                      setShowAdvanced(false)
+                    }
+                  }}
+                  value={engine}
+                >
+                  <SelectTrigger className="w-full" id="trace-engine">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ENGINES.map((e) => (
+                      <SelectItem key={e.value} label={e.label} value={e.value}>
+                        {e.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 预设选择 */}
               <div className="flex flex-col gap-2">
                 <label
                   className="text-muted-foreground text-xs"
@@ -362,28 +515,61 @@ export default function ImageToSvgPage() {
                 >
                   描摹预设
                 </label>
-                <Select
-                  onValueChange={(v) => {
-                    if (v) {
-                      setPreset(v)
-                      syncSlidersFromPreset(v)
-                    }
-                  }}
-                  value={preset}
-                >
-                  <SelectTrigger className="w-full" id="trace-preset">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRESETS.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.label} — {p.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {engine === 'imagetracer' ? (
+                  <Select
+                    items={IMAGETRACER_PRESETS}
+                    onValueChange={(v) => {
+                      if (v) {
+                        setItPreset(v)
+                        syncItSlidersFromPreset(v)
+                      }
+                    }}
+                    value={itPreset}
+                  >
+                    <SelectTrigger className="w-full" id="trace-preset">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IMAGETRACER_PRESETS.map((p) => (
+                        <SelectItem
+                          key={p.value}
+                          label={p.label}
+                          value={p.value}
+                        >
+                          {p.label} — {p.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select
+                    items={POTRACE_PRESETS}
+                    onValueChange={(v) => {
+                      if (v) {
+                        setPtPreset(v)
+                      }
+                    }}
+                    value={ptPreset}
+                  >
+                    <SelectTrigger className="w-full" id="trace-preset">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {POTRACE_PRESETS.map((p) => (
+                        <SelectItem
+                          key={p.value}
+                          label={p.label}
+                          value={p.value}
+                        >
+                          {p.label} — {p.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
+              {/* 高级参数 */}
               <div className="flex flex-col gap-3">
                 <Button
                   className="w-full justify-between"
@@ -400,7 +586,7 @@ export default function ImageToSvgPage() {
                   )}
                 </Button>
 
-                {showAdvanced && (
+                {showAdvanced && engine === 'imagetracer' && (
                   <div className="flex flex-col gap-4 rounded-lg border border-dashed p-4">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
@@ -471,6 +657,101 @@ export default function ImageToSvgPage() {
                         step={0.01}
                         value={[qtres]}
                       />
+                    </div>
+                  </div>
+                )}
+
+                {showAdvanced && engine === 'potrace' && (
+                  <div className="flex flex-col gap-4 rounded-lg border border-dashed p-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-xs">
+                          噪点过滤 (turdsize)
+                        </span>
+                        <span className="font-mono text-muted-foreground text-xs">
+                          {turdsize}
+                        </span>
+                      </div>
+                      <Slider
+                        max={100}
+                        min={0}
+                        onValueChange={(v) => setTurdsize(sliderFirst(v, 2))}
+                        step={1}
+                        value={[turdsize]}
+                      />
+                      <p className="text-muted-foreground/70 text-xs">
+                        面积小于此值的斑点会被忽略
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-xs">
+                          角点平滑 (alphamax)
+                        </span>
+                        <span className="font-mono text-muted-foreground text-xs">
+                          {alphamax.toFixed(2)}
+                        </span>
+                      </div>
+                      <Slider
+                        max={1.34}
+                        min={0}
+                        onValueChange={(v) => setAlphamax(sliderFirst(v, 1))}
+                        step={0.01}
+                        value={[alphamax]}
+                      />
+                      <p className="text-muted-foreground/70 text-xs">
+                        值越大曲线越平滑，0 = 全锐角
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-xs">
+                          曲线优化容差 (opttolerance)
+                        </span>
+                        <span className="font-mono text-muted-foreground text-xs">
+                          {opttolerance.toFixed(2)}
+                        </span>
+                      </div>
+                      <Slider
+                        max={1}
+                        min={0}
+                        onValueChange={(v) =>
+                          setOpttolerance(sliderFirst(v, 0.2))
+                        }
+                        step={0.01}
+                        value={[opttolerance]}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label
+                        className="text-muted-foreground text-xs"
+                        htmlFor="turnpolicy-select"
+                      >
+                        转向策略 (turnpolicy)
+                      </label>
+                      <Select
+                        items={POTRACE_TURN_POLICIES}
+                        onValueChange={(v) => {
+                          if (v) {
+                            setTurnpolicy(Number(v))
+                          }
+                        }}
+                        value={String(turnpolicy)}
+                      >
+                        <SelectTrigger
+                          className="w-full"
+                          id="turnpolicy-select"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {POTRACE_TURN_POLICIES.map((p) => (
+                            <SelectItem key={p.value} value={String(p.value)}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 )}
