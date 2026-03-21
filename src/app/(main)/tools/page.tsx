@@ -93,10 +93,9 @@ const toolGroups: ToolGroup[] = [
         href: '/tools/image-to-svg',
       },
       {
-        name: 'SVGOMG',
-        description: '在浏览器中精简、优化 SVG 代码体积',
-        href: 'https://jakearchibald.github.io/svgomg/',
-        isExternal: true,
+        name: 'SVG Viewer',
+        description: '浏览、编辑、优化 SVG 并转换为多种格式',
+        href: '/tools/svg-viewer',
       },
       {
         name: 'Vectorizer.AI',
