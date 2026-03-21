@@ -98,6 +98,11 @@ const toolGroups: ToolGroup[] = [
         href: '/tools/svg-viewer',
       },
       {
+        name: 'Watermark Remover',
+        description: '去除 Gemini 生成图片的 nanobanana 水印',
+        href: '/tools/watermark-remover',
+      },
+      {
         name: 'Vectorizer.AI',
         description: '将位图 Logo 转为可缩放矢量（需留意授权与用途）',
         href: 'https://vectorizer.ai',
