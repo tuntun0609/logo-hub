@@ -40,11 +40,11 @@ export function OutputTabs({ bgMode, onBgModeChange, svg }: OutputTabsProps) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-muted/30">
       {/* Tab bar */}
-      <div className="flex shrink-0 items-center gap-0.5 border-b px-2 py-1">
+      <div className="-mx-px flex shrink-0 items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b px-2 py-1 [-webkit-overflow-scrolling:touch]">
         {TABS.map((tab) => (
           <button
             className={cn(
-              'rounded-md px-2.5 py-1 font-medium text-xs transition-colors',
+              'shrink-0 rounded-md px-2.5 py-1 font-medium text-xs transition-colors',
               activeTab === tab.value
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -119,7 +119,7 @@ function ReactJsxTab({ svg }: { svg: string }) {
       <div className="flex shrink-0 items-center justify-end gap-2 border-b px-3 py-1.5">
         <CopyButton text={jsx} />
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col">
         <SvgEditor lang="javascript" readOnly value={jsx} />
       </div>
     </div>
@@ -140,7 +140,7 @@ function ReactNativeTab({ svg }: { svg: string }) {
       <div className="flex shrink-0 items-center justify-end gap-2 border-b px-3 py-1.5">
         <CopyButton text={rn} />
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col">
         <SvgEditor lang="javascript" readOnly value={rn} />
       </div>
     </div>
