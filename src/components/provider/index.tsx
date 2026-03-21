@@ -1,4 +1,5 @@
 import { ClerkProvider } from '@clerk/nextjs'
+import { Toaster } from '@/components/ui/sonner'
 import ConvexClientProvider from './convex-provider'
 import { ThemeProvider } from './theme-provider'
 
@@ -13,6 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           enableSystem
         >
           {children}
+          <Toaster richColors />
         </ThemeProvider>
       </ConvexClientProvider>
     </ClerkProvider>
