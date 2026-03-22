@@ -10,10 +10,13 @@
     "format": "biome format --write",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "dev:convex": "convex dev"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@better-upload/client": "^3.0.14",
+    "@better-upload/server": "^3.0.14",
     "@clerk/nextjs": "^7.0.1",
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/lang-xml": "^6.1.0",

@@ -60,5 +60,17 @@
         "useExhaustiveDependencies": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["convex/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    }
+  ]
 }
