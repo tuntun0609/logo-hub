@@ -363,14 +363,14 @@ function LogoCard({
   onToggleVisibility,
 }: LogoCardProps) {
   return (
-    <div className="group relative flex flex-col rounded-xl border bg-card p-4 transition-shadow hover:shadow-md">
-      <div className="relative mb-3 flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
+    <div className="group relative flex flex-col rounded-lg border bg-card p-2.5 transition-shadow hover:shadow-md">
+      <div className="relative mb-2 flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-muted">
         <img
           alt={logo.name}
-          className="max-h-full max-w-full object-contain p-4"
-          height={256}
+          className="max-h-full max-w-full object-contain p-3"
+          height={160}
           src={logo.logoUrl}
-          width={256}
+          width={160}
         />
         {!logo.visible && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/60">
@@ -399,7 +399,7 @@ function LogoCard({
           </p>
         )}
       </div>
-      <div className="mt-3 flex items-center gap-1 border-t pt-3">
+      <div className="mt-2 flex items-center gap-1 border-t pt-2">
         <Button onClick={() => onEdit(logo)} size="icon-xs" variant="ghost">
           <Pencil />
         </Button>
@@ -531,7 +531,7 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
 
       {/* Grid */}
       {filtered.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filtered.map((logo) => (
             <LogoCard
               key={logo._id}
