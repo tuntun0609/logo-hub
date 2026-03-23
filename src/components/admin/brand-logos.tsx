@@ -3,8 +3,17 @@
 import { api } from '@convex/_generated/api'
 import type { Doc } from '@convex/_generated/dataModel'
 import { useMutation } from 'convex/react'
-import { Eye, EyeOff, Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -453,10 +462,20 @@ function LogoListItem({
 }
 
 interface AdminLogosContentProps {
+  isLoading: boolean
+  loadMore: () => void
   logos: BrandLogo[]
+  pageSize: number
+  status: 'CanLoadMore' | 'Exhausted' | 'LoadingMore'
 }
 
-export function AdminLogosContent({ logos }: AdminLogosContentProps) {
+export function AdminLogosContent({
+  logos,
+  pageSize,
+  status,
+  isLoading,
+  loadMore,
+}: AdminLogosContentProps) {
   const toggleVisibility = useMutation(api.brandLogos.toggleVisibility)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<BrandLogo | null>(null)
@@ -464,22 +483,49 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [visibilityFilter, setVisibilityFilter] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState(0)
 
-  const filtered = logos.filter((logo) => {
-    if (search && !logo.name.toLowerCase().includes(search.toLowerCase())) {
-      return false
+  const filtered = useMemo(
+    () =>
+      logos.filter((logo) => {
+        if (search && !logo.name.toLowerCase().includes(search.toLowerCase())) {
+          return false
+        }
+        if (categoryFilter && logo.category !== categoryFilter) {
+          return false
+        }
+        if (visibilityFilter === 'visible' && !logo.visible) {
+          return false
+        }
+        if (visibilityFilter === 'hidden' && logo.visible) {
+          return false
+        }
+        return true
+      }),
+    [logos, search, categoryFilter, visibilityFilter]
+  )
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const pageItems = filtered.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize
+  )
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [search, categoryFilter, visibilityFilter])
+
+  // Load more data from Convex when approaching the last loaded page
+  useEffect(() => {
+    if (
+      status === 'CanLoadMore' &&
+      !isLoading &&
+      currentPage >= totalPages - 1
+    ) {
+      loadMore()
     }
-    if (categoryFilter && logo.category !== categoryFilter) {
-      return false
-    }
-    if (visibilityFilter === 'visible' && !logo.visible) {
-      return false
-    }
-    if (visibilityFilter === 'hidden' && logo.visible) {
-      return false
-    }
-    return true
-  })
+  }, [currentPage, totalPages, status, isLoading, loadMore])
 
   const handleEdit = (logo: BrandLogo) => {
     setEditing(logo)
@@ -500,6 +546,18 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
     }
   }
 
+  const canGoPrev = currentPage > 0
+  const canGoNext = currentPage < totalPages - 1 || status === 'CanLoadMore'
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage((p) => p + 1)
+    } else if (status === 'CanLoadMore') {
+      loadMore()
+      setCurrentPage((p) => p + 1)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -507,7 +565,8 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
         <div>
           <h1 className="font-bold text-2xl">Logo 管理</h1>
           <p className="mt-1 text-muted-foreground text-sm">
-            管理所有品牌 Logo 资源 · 共 {logos.length} 个
+            管理所有品牌 Logo 资源 · 共 {filtered.length} 个
+            {filtered.length !== logos.length && ` (已加载 ${logos.length} 个)`}
           </p>
         </div>
         <Button onClick={handleCreate}>
@@ -559,7 +618,7 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
       </div>
 
       {/* List */}
-      {filtered.length > 0 ? (
+      {pageItems.length > 0 ? (
         <div className="overflow-hidden rounded-xl border bg-background">
           <div className="hidden grid-cols-[96px_minmax(0,1.3fr)_minmax(0,0.8fr)_auto] gap-3 border-b bg-muted/30 px-4 py-3 text-muted-foreground text-xs uppercase tracking-[0.12em] sm:grid">
             <span>Logo</span>
@@ -568,7 +627,7 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
             <span className="text-right">操作</span>
           </div>
           <ul className="divide-y">
-            {filtered.map((logo) => (
+            {pageItems.map((logo) => (
               <LogoListItem
                 key={logo._id}
                 logo={logo}
@@ -592,6 +651,36 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
               添加第一个 Logo
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-muted-foreground text-sm">
+            第 {currentPage + 1} 页
+            {status === 'Exhausted' && ` / ${totalPages} 页`}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              disabled={!canGoPrev}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              size="sm"
+              variant="outline"
+            >
+              <ChevronLeft className="mr-1 size-4" />
+              上一页
+            </Button>
+            <Button
+              disabled={!canGoNext || isLoading}
+              onClick={handleNextPage}
+              size="sm"
+              variant="outline"
+            >
+              {isLoading ? '加载中...' : '下一页'}
+              {!isLoading && <ChevronRight className="ml-1 size-4" />}
+            </Button>
+          </div>
         </div>
       )}
 
