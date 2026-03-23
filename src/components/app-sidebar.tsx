@@ -52,7 +52,7 @@ import {
 
 const discoverItems = [
   { title: 'Home', url: '/', icon: Home },
-  { title: 'Showcase', url: '/showcase', icon: GalleryVerticalEnd },
+  { title: 'Brand Logos', url: '/brand-logos', icon: GalleryVerticalEnd },
   { title: 'Gallery', icon: Images, badge: 'New' },
   { title: 'Navigate', icon: Compass },
   { title: 'Authors', icon: Users },
