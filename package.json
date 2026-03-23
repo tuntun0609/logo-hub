@@ -10,10 +10,14 @@
     "format": "biome format --write",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "dev:convex": "convex dev",
+    "seed:logos": "bun run scripts/seed-logos.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@better-upload/client": "^3.0.14",
+    "@better-upload/server": "^3.0.14",
     "@clerk/nextjs": "^7.0.1",
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/lang-xml": "^6.1.0",
@@ -33,6 +37,7 @@
     "next-themes": "^0.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-dropzone": "^15.0.0",
     "react-easy-crop": "^5.5.6",
     "shadcn": "^4.0.2",
     "sonner": "^2.0.7",
