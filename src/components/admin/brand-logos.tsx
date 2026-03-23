@@ -351,22 +351,22 @@ export function DeleteConfirmDialog({
   )
 }
 
-interface LogoCardProps {
+interface LogoListItemProps {
   logo: BrandLogo
   onDelete: (logo: BrandLogo) => void
   onEdit: (logo: BrandLogo) => void
   onToggleVisibility: (logo: BrandLogo) => void
 }
 
-function LogoCard({
+function LogoListItem({
   logo,
   onEdit,
   onDelete,
   onToggleVisibility,
-}: LogoCardProps) {
+}: LogoListItemProps) {
   return (
-    <div className="group relative flex flex-col rounded-lg border bg-card p-2.5 transition-shadow hover:shadow-md">
-      <div className="relative mb-2 flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-muted">
+    <li className="grid gap-3 px-4 py-4 transition-colors hover:bg-muted/30 sm:grid-cols-[96px_minmax(0,1.3fr)_minmax(0,0.8fr)_auto] sm:items-center">
+      <div className="relative flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border bg-muted/60 sm:h-16 sm:w-24">
         <img
           alt={logo.name}
           className="max-h-full max-w-full object-contain p-3"
@@ -375,33 +375,60 @@ function LogoCard({
           width={160}
         />
         {!logo.visible && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60">
-            <EyeOff className="size-6 text-muted-foreground" />
+          <div className="absolute inset-0 flex items-center justify-center bg-background/72">
+            <EyeOff className="size-5 text-muted-foreground" />
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate font-medium text-sm">{logo.name}</h3>
+
+      <div className="min-w-0 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="truncate font-medium text-sm sm:text-base">
+            {logo.name}
+          </h3>
           {logo.brandColor && (
             <div
               className="size-3 shrink-0 rounded-full border"
               style={{ backgroundColor: logo.brandColor }}
             />
           )}
-        </div>
-        {logo.category && (
-          <Badge className="w-fit" variant="secondary">
-            {logo.category}
+          <Badge variant={logo.visible ? 'secondary' : 'outline'}>
+            {logo.visible ? '已公开' : '已隐藏'}
           </Badge>
-        )}
+        </div>
+
         {logo.description && (
-          <p className="line-clamp-2 text-muted-foreground text-xs">
+          <p className="line-clamp-2 text-muted-foreground text-xs sm:text-sm">
             {logo.description}
           </p>
         )}
+
+        <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
+          {logo.category ? (
+            <Badge className="w-fit" variant="outline">
+              {logo.category}
+            </Badge>
+          ) : (
+            <span>未分类</span>
+          )}
+          {logo.website && <span className="truncate">官网已填写</span>}
+          {logo.tags && logo.tags.length > 0 && (
+            <span className="truncate">标签 {logo.tags.length} 个</span>
+          )}
+        </div>
       </div>
-      <div className="mt-2 flex items-center gap-1 border-t pt-2">
+
+      <div className="hidden min-w-0 sm:block">
+        {logo.logoSvgUrl ? (
+          <p className="truncate text-muted-foreground text-xs">
+            含 SVG 源文件
+          </p>
+        ) : (
+          <p className="truncate text-muted-foreground text-xs">仅图片地址</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 border-t pt-3 sm:justify-end sm:border-t-0 sm:pt-0">
         <Button onClick={() => onEdit(logo)} size="icon-xs" variant="ghost">
           <Pencil />
         </Button>
@@ -421,7 +448,7 @@ function LogoCard({
           <Trash2 className="text-destructive" />
         </Button>
       </div>
-    </div>
+    </li>
   )
 }
 
@@ -531,18 +558,26 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
         </Select>
       </div>
 
-      {/* Grid */}
+      {/* List */}
       {filtered.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {filtered.map((logo) => (
-            <LogoCard
-              key={logo._id}
-              logo={logo}
-              onDelete={setDeleteTarget}
-              onEdit={handleEdit}
-              onToggleVisibility={handleToggleVisibility}
-            />
-          ))}
+        <div className="overflow-hidden rounded-xl border bg-background">
+          <div className="hidden grid-cols-[96px_minmax(0,1.3fr)_minmax(0,0.8fr)_auto] gap-3 border-b bg-muted/30 px-4 py-3 text-muted-foreground text-xs uppercase tracking-[0.12em] sm:grid">
+            <span>Logo</span>
+            <span>品牌信息</span>
+            <span>资源状态</span>
+            <span className="text-right">操作</span>
+          </div>
+          <ul className="divide-y">
+            {filtered.map((logo) => (
+              <LogoListItem
+                key={logo._id}
+                logo={logo}
+                onDelete={setDeleteTarget}
+                onEdit={handleEdit}
+                onToggleVisibility={handleToggleVisibility}
+              />
+            ))}
+          </ul>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
