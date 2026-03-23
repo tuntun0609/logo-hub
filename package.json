@@ -11,7 +11,8 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install",
-    "dev:convex": "convex dev"
+    "dev:convex": "convex dev",
+    "seed:logos": "bun run scripts/seed-logos.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

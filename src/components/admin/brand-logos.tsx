@@ -4,7 +4,7 @@ import { api } from '@convex/_generated/api'
 import type { Doc } from '@convex/_generated/dataModel'
 import { useMutation } from 'convex/react'
 import { Eye, EyeOff, Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,16 +95,18 @@ export function LogoFormDialog({
 }: LogoFormDialogProps) {
   const create = useMutation(api.brandLogos.create)
   const update = useMutation(api.brandLogos.update)
-  const [form, setForm] = useState<LogoFormData>(
-    editing ? logoToForm(editing) : emptyForm
-  )
+  const [form, setForm] = useState<LogoFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  // Reset form when dialog opens with new data
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
+  // Sync form data whenever dialog opens or editing target changes
+  useEffect(() => {
+    if (open) {
       setForm(editing ? logoToForm(editing) : emptyForm)
-    } else {
+    }
+  }, [open, editing])
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
       onClose()
     }
   }

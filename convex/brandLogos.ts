@@ -86,6 +86,33 @@ export const remove = mutation({
   },
 })
 
+export const seed = mutation({
+  args: {
+    logos: v.array(
+      v.object({
+        name: v.string(),
+        logoSvgUrl: v.string(),
+        visible: v.boolean(),
+        order: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const results: string[] = []
+    for (const logo of args.logos) {
+      const id = await ctx.db.insert('brand_logos', {
+        name: logo.name,
+        logoUrl: logo.logoSvgUrl,
+        logoSvgUrl: logo.logoSvgUrl,
+        visible: logo.visible,
+        order: logo.order,
+      })
+      results.push(id)
+    }
+    return results
+  },
+})
+
 export const toggleVisibility = mutation({
   args: { id: v.id('brand_logos') },
   handler: async (ctx, args) => {
