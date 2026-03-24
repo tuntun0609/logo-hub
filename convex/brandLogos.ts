@@ -1,10 +1,14 @@
+import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query('brand_logos').order('desc').collect()
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('brand_logos')
+      .order('desc')
+      .paginate(args.paginationOpts)
   },
 })
 
@@ -16,6 +20,17 @@ export const listVisible = query({
       .withIndex('by_visible', (q) => q.eq('visible', true))
       .order('desc')
       .collect()
+  },
+})
+
+export const listVisiblePaginated = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('brand_logos')
+      .withIndex('by_visible', (q) => q.eq('visible', true))
+      .order('desc')
+      .paginate(args.paginationOpts)
   },
 })
 

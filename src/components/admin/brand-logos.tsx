@@ -3,8 +3,17 @@
 import { api } from '@convex/_generated/api'
 import type { Doc } from '@convex/_generated/dataModel'
 import { useMutation } from 'convex/react'
-import { Eye, EyeOff, Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -351,22 +360,22 @@ export function DeleteConfirmDialog({
   )
 }
 
-interface LogoCardProps {
+interface LogoListItemProps {
   logo: BrandLogo
   onDelete: (logo: BrandLogo) => void
   onEdit: (logo: BrandLogo) => void
   onToggleVisibility: (logo: BrandLogo) => void
 }
 
-function LogoCard({
+function LogoListItem({
   logo,
   onEdit,
   onDelete,
   onToggleVisibility,
-}: LogoCardProps) {
+}: LogoListItemProps) {
   return (
-    <div className="group relative flex flex-col rounded-lg border bg-card p-2.5 transition-shadow hover:shadow-md">
-      <div className="relative mb-2 flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-muted">
+    <li className="grid gap-3 px-4 py-4 transition-colors hover:bg-muted/30 sm:grid-cols-[96px_minmax(0,1.3fr)_minmax(0,0.8fr)_auto] sm:items-center">
+      <div className="relative flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border bg-muted/60 sm:h-16 sm:w-24">
         <img
           alt={logo.name}
           className="max-h-full max-w-full object-contain p-3"
@@ -375,33 +384,60 @@ function LogoCard({
           width={160}
         />
         {!logo.visible && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60">
-            <EyeOff className="size-6 text-muted-foreground" />
+          <div className="absolute inset-0 flex items-center justify-center bg-background/72">
+            <EyeOff className="size-5 text-muted-foreground" />
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate font-medium text-sm">{logo.name}</h3>
+
+      <div className="min-w-0 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="truncate font-medium text-sm sm:text-base">
+            {logo.name}
+          </h3>
           {logo.brandColor && (
             <div
               className="size-3 shrink-0 rounded-full border"
               style={{ backgroundColor: logo.brandColor }}
             />
           )}
-        </div>
-        {logo.category && (
-          <Badge className="w-fit" variant="secondary">
-            {logo.category}
+          <Badge variant={logo.visible ? 'secondary' : 'outline'}>
+            {logo.visible ? '已公开' : '已隐藏'}
           </Badge>
-        )}
+        </div>
+
         {logo.description && (
-          <p className="line-clamp-2 text-muted-foreground text-xs">
+          <p className="line-clamp-2 text-muted-foreground text-xs sm:text-sm">
             {logo.description}
           </p>
         )}
+
+        <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
+          {logo.category ? (
+            <Badge className="w-fit" variant="outline">
+              {logo.category}
+            </Badge>
+          ) : (
+            <span>未分类</span>
+          )}
+          {logo.website && <span className="truncate">官网已填写</span>}
+          {logo.tags && logo.tags.length > 0 && (
+            <span className="truncate">标签 {logo.tags.length} 个</span>
+          )}
+        </div>
       </div>
-      <div className="mt-2 flex items-center gap-1 border-t pt-2">
+
+      <div className="hidden min-w-0 sm:block">
+        {logo.logoSvgUrl ? (
+          <p className="truncate text-muted-foreground text-xs">
+            含 SVG 源文件
+          </p>
+        ) : (
+          <p className="truncate text-muted-foreground text-xs">仅图片地址</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 border-t pt-3 sm:justify-end sm:border-t-0 sm:pt-0">
         <Button onClick={() => onEdit(logo)} size="icon-xs" variant="ghost">
           <Pencil />
         </Button>
@@ -421,15 +457,25 @@ function LogoCard({
           <Trash2 className="text-destructive" />
         </Button>
       </div>
-    </div>
+    </li>
   )
 }
 
 interface AdminLogosContentProps {
+  isLoading: boolean
+  loadMore: () => void
   logos: BrandLogo[]
+  pageSize: number
+  status: 'CanLoadMore' | 'Exhausted' | 'LoadingMore'
 }
 
-export function AdminLogosContent({ logos }: AdminLogosContentProps) {
+export function AdminLogosContent({
+  logos,
+  pageSize,
+  status,
+  isLoading,
+  loadMore,
+}: AdminLogosContentProps) {
   const toggleVisibility = useMutation(api.brandLogos.toggleVisibility)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<BrandLogo | null>(null)
@@ -437,22 +483,49 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [visibilityFilter, setVisibilityFilter] = useState<string>('')
+  const [currentPage, setCurrentPage] = useState(0)
 
-  const filtered = logos.filter((logo) => {
-    if (search && !logo.name.toLowerCase().includes(search.toLowerCase())) {
-      return false
+  const filtered = useMemo(
+    () =>
+      logos.filter((logo) => {
+        if (search && !logo.name.toLowerCase().includes(search.toLowerCase())) {
+          return false
+        }
+        if (categoryFilter && logo.category !== categoryFilter) {
+          return false
+        }
+        if (visibilityFilter === 'visible' && !logo.visible) {
+          return false
+        }
+        if (visibilityFilter === 'hidden' && logo.visible) {
+          return false
+        }
+        return true
+      }),
+    [logos, search, categoryFilter, visibilityFilter]
+  )
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const pageItems = filtered.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize
+  )
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [search, categoryFilter, visibilityFilter])
+
+  // Load more data from Convex when approaching the last loaded page
+  useEffect(() => {
+    if (
+      status === 'CanLoadMore' &&
+      !isLoading &&
+      currentPage >= totalPages - 1
+    ) {
+      loadMore()
     }
-    if (categoryFilter && logo.category !== categoryFilter) {
-      return false
-    }
-    if (visibilityFilter === 'visible' && !logo.visible) {
-      return false
-    }
-    if (visibilityFilter === 'hidden' && logo.visible) {
-      return false
-    }
-    return true
-  })
+  }, [currentPage, totalPages, status, isLoading, loadMore])
 
   const handleEdit = (logo: BrandLogo) => {
     setEditing(logo)
@@ -473,6 +546,18 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
     }
   }
 
+  const canGoPrev = currentPage > 0
+  const canGoNext = currentPage < totalPages - 1 || status === 'CanLoadMore'
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage((p) => p + 1)
+    } else if (status === 'CanLoadMore') {
+      loadMore()
+      setCurrentPage((p) => p + 1)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -480,7 +565,8 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
         <div>
           <h1 className="font-bold text-2xl">Logo 管理</h1>
           <p className="mt-1 text-muted-foreground text-sm">
-            管理所有品牌 Logo 资源 · 共 {logos.length} 个
+            管理所有品牌 Logo 资源 · 共 {filtered.length} 个
+            {filtered.length !== logos.length && ` (已加载 ${logos.length} 个)`}
           </p>
         </div>
         <Button onClick={handleCreate}>
@@ -531,18 +617,26 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
         </Select>
       </div>
 
-      {/* Grid */}
-      {filtered.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {filtered.map((logo) => (
-            <LogoCard
-              key={logo._id}
-              logo={logo}
-              onDelete={setDeleteTarget}
-              onEdit={handleEdit}
-              onToggleVisibility={handleToggleVisibility}
-            />
-          ))}
+      {/* List */}
+      {pageItems.length > 0 ? (
+        <div className="overflow-hidden rounded-xl border bg-background">
+          <div className="hidden grid-cols-[96px_minmax(0,1.3fr)_minmax(0,0.8fr)_auto] gap-3 border-b bg-muted/30 px-4 py-3 text-muted-foreground text-xs uppercase tracking-[0.12em] sm:grid">
+            <span>Logo</span>
+            <span>品牌信息</span>
+            <span>资源状态</span>
+            <span className="text-right">操作</span>
+          </div>
+          <ul className="divide-y">
+            {pageItems.map((logo) => (
+              <LogoListItem
+                key={logo._id}
+                logo={logo}
+                onDelete={setDeleteTarget}
+                onEdit={handleEdit}
+                onToggleVisibility={handleToggleVisibility}
+              />
+            ))}
+          </ul>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
@@ -557,6 +651,36 @@ export function AdminLogosContent({ logos }: AdminLogosContentProps) {
               添加第一个 Logo
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-muted-foreground text-sm">
+            第 {currentPage + 1} 页
+            {status === 'Exhausted' && ` / ${totalPages} 页`}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              disabled={!canGoPrev}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              size="sm"
+              variant="outline"
+            >
+              <ChevronLeft className="mr-1 size-4" />
+              上一页
+            </Button>
+            <Button
+              disabled={!canGoNext || isLoading}
+              onClick={handleNextPage}
+              size="sm"
+              variant="outline"
+            >
+              {isLoading ? '加载中...' : '下一页'}
+              {!isLoading && <ChevronRight className="ml-1 size-4" />}
+            </Button>
+          </div>
         </div>
       )}
 
