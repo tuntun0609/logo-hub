@@ -11,7 +11,7 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install",
-    "dev:convex": "convex dev",
+    "convex:dev": "convex dev",
     "seed:logos": "bun run scripts/seed-logos.ts"
   },
   "dependencies": {

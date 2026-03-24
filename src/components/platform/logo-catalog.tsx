@@ -3,15 +3,7 @@
 import { api } from '@convex/_generated/api'
 import type { Doc } from '@convex/_generated/dataModel'
 import { usePaginatedQuery } from 'convex/react'
-import {
-  ArrowRight,
-  Compass,
-  LayoutGrid,
-  ScanSearch,
-  Search,
-  Sparkles,
-  Tag,
-} from 'lucide-react'
+import { ArrowRight, LayoutGrid, ScanSearch, Search, Tag } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -291,87 +283,6 @@ export function LogoCatalog() {
 
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.04),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(248,250,252,0.98))] p-6 sm:p-8">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
-          <div className="space-y-5">
-            <Badge
-              className="rounded-full px-3 py-1 text-xs"
-              variant="secondary"
-            >
-              P0 主骨架 · Logo 案例库
-            </Badge>
-            <div className="space-y-3">
-              <h1 className="max-w-3xl font-semibold text-3xl tracking-tight sm:text-4xl">
-                从“看卡片”升级成可浏览、可回访、可串联工具的 Logo 详情体系
-              </h1>
-              <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
-                先补齐案例列表、详情页、相关推荐与搜索入口，让用户能顺着案例继续浏览工具、网站与灵感资源。
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { label: '已加载案例', value: `${logos.length}+` },
-                { label: '筛选维度', value: '分类 / 标签 / 关键词' },
-                { label: '下一跳', value: '详情页 / 工具 / 站点' },
-              ].map((item) => (
-                <div
-                  className="rounded-2xl border border-border/60 bg-background/70 p-4"
-                  key={item.label}
-                >
-                  <p className="text-muted-foreground text-xs">{item.label}</p>
-                  <p className="mt-2 font-medium text-base">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-3 self-start">
-            {[
-              {
-                href: '/search?type=logo',
-                icon: Search,
-                title: '统一搜索',
-                description: '跨案例、工具、网站、作者、方案统一检索。',
-              },
-              {
-                href: '/sites',
-                icon: Compass,
-                title: '网站导航',
-                description: '继续扩展灵感来源与外部参考站点。',
-              },
-              {
-                href: '/tools',
-                icon: Sparkles,
-                title: '工具库',
-                description: '从案例直接跳到配色、矢量化与导出工具。',
-              },
-            ].map((item) => (
-              <Link
-                className="group rounded-3xl border border-border/60 bg-background/80 p-4 transition hover:border-foreground/15 hover:bg-background"
-                href={item.href}
-                key={item.title}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-                    <item.icon className="size-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-medium text-base">{item.title}</h2>
-                      <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-1" />
-                    </div>
-                    <p className="mt-1 text-muted-foreground text-sm">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.98))] p-5 sm:p-6">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.08),transparent_34%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_28%)]" />
         <div className="relative space-y-5">
@@ -455,14 +366,13 @@ export function LogoCatalog() {
                 <span>行业浏览</span>
               </div>
               <p className="text-muted-foreground text-sm">
-                行业卡片会根据当前关键词和标签动态显示命中数量。
+                行业卡片会根据当前关键词和标签动态辅助筛选。
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               {CATEGORIES.map((item) => {
                 const isActive = item === category
-                const count = categoryCounts[item]
 
                 return (
                   <button
@@ -476,30 +386,18 @@ export function LogoCatalog() {
                     onClick={() => setCategory(isActive ? 'all' : item)}
                     type="button"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-sm">{item}</p>
-                        <p
-                          className={cn(
-                            'mt-2 text-xs',
-                            isActive
-                              ? 'text-primary-foreground/75'
-                              : 'text-muted-foreground'
-                          )}
-                        >
-                          {CATEGORY_DETAILS[item]}
-                        </p>
-                      </div>
-                      <span
+                    <div>
+                      <p className="font-medium text-sm">{item}</p>
+                      <p
                         className={cn(
-                          'rounded-full px-2 py-1 text-xs',
+                          'mt-2 text-xs',
                           isActive
-                            ? 'bg-primary-foreground/12 text-primary-foreground'
-                            : 'bg-secondary text-foreground'
+                            ? 'text-primary-foreground/75'
+                            : 'text-muted-foreground'
                         )}
                       >
-                        {count}
-                      </span>
+                        {CATEGORY_DETAILS[item]}
+                      </p>
                     </div>
                   </button>
                 )
@@ -561,13 +459,7 @@ export function LogoCatalog() {
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-xl">案例列表</h2>
-            <p className="mt-1 text-muted-foreground text-sm">
-              当前展示 {filtered.length} 个结果
-              {status !== 'Exhausted' ? ` · 已加载 ${logos.length} 个` : ''}
-            </p>
-          </div>
+          <h2 className="font-semibold text-xl">案例列表</h2>
         </div>
 
         {mainContent}
