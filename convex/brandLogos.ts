@@ -23,6 +23,17 @@ export const listVisible = query({
   },
 })
 
+export const listVisiblePaginated = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('brand_logos')
+      .withIndex('by_visible', (q) => q.eq('visible', true))
+      .order('desc')
+      .paginate(args.paginationOpts)
+  },
+})
+
 export const get = query({
   args: { id: v.id('brand_logos') },
   handler: async (ctx, args) => {

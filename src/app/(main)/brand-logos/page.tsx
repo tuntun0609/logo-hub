@@ -3,7 +3,7 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { api } from '@convex/_generated/api'
 import type { Doc } from '@convex/_generated/dataModel'
-import { useQuery } from 'convex/react'
+import { usePaginatedQuery } from 'convex/react'
 import { Download, ExternalLink, Search, XIcon } from 'lucide-react'
 import { AnimatePresence, motion, type Transition } from 'motion/react'
 import { type ReactNode, useCallback, useRef, useState } from 'react'
@@ -58,6 +58,8 @@ const CATEGORIES = [
   '出行',
   '其他',
 ]
+
+const PAGE_SIZE = 24
 
 function LogoCard({
   logo,
@@ -306,7 +308,16 @@ function LoadingSkeleton() {
 }
 
 export default function BrandLogosPage() {
-  const logos = useQuery(api.brandLogos.listVisible)
+  const {
+    results: logos,
+    status,
+    loadMore,
+    isLoading,
+  } = usePaginatedQuery(
+    api.brandLogos.listVisiblePaginated,
+    {},
+    { initialNumItems: PAGE_SIZE }
+  )
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [selectedLogo, setSelectedLogo] = useState<BrandLogo | null>(null)
@@ -322,7 +333,7 @@ export default function BrandLogosPage() {
     setCardRect(null)
   }, [])
 
-  const filtered = logos?.filter((logo) => {
+  const filtered = logos.filter((logo) => {
     if (search && !logo.name.toLowerCase().includes(search.toLowerCase())) {
       return false
     }
@@ -332,23 +343,62 @@ export default function BrandLogosPage() {
     return true
   })
 
+  const hasActiveFilters = Boolean(search || category)
+  const isLoadingMore = status === 'LoadingMore'
+  const canLoadMore = status === 'CanLoadMore'
+
   let mainContent: ReactNode
-  if (logos === undefined) {
+  if (status === 'LoadingFirstPage') {
     mainContent = <LoadingSkeleton />
-  } else if (filtered && filtered.length > 0) {
+  } else if (filtered.length > 0) {
     mainContent = (
-      <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-        {filtered.map((logo) => (
-          <LogoCard key={logo._id} logo={logo} onSelect={handleSelect} />
-        ))}
+      <div className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {filtered.map((logo) => (
+            <LogoCard key={logo._id} logo={logo} onSelect={handleSelect} />
+          ))}
+        </div>
+
+        {(canLoadMore || isLoadingMore) && (
+          <div className="flex justify-center">
+            <Button
+              disabled={isLoading}
+              onClick={() => loadMore(PAGE_SIZE)}
+              variant="outline"
+            >
+              {isLoadingMore ? '加载中...' : '加载更多'}
+            </Button>
+          </div>
+        )}
       </div>
     )
   } else {
+    let emptyStateMessage: string
+    if (!hasActiveFilters) {
+      emptyStateMessage = '暂无 Logo'
+    } else if (canLoadMore || isLoadingMore) {
+      emptyStateMessage = '当前已加载的数据里没有匹配的 Logo，可继续加载更多'
+    } else {
+      emptyStateMessage = '没有找到匹配的 Logo'
+    }
+
     mainContent = (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
-        <p className="text-muted-foreground">
-          {search || category ? '没有找到匹配的 Logo' : '暂无 Logo'}
-        </p>
+      <div className="space-y-5">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
+          <p className="text-muted-foreground">{emptyStateMessage}</p>
+        </div>
+
+        {(canLoadMore || isLoadingMore) && (
+          <div className="flex justify-center">
+            <Button
+              disabled={isLoading}
+              onClick={() => loadMore(PAGE_SIZE)}
+              variant="outline"
+            >
+              {isLoadingMore ? '加载中...' : '加载更多'}
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
@@ -359,7 +409,10 @@ export default function BrandLogosPage() {
       <div>
         <h1 className="font-bold text-2xl">Brand Logos</h1>
         <p className="mt-1 text-muted-foreground text-sm">
-          浏览和下载品牌 Logo 资源
+          浏览和下载品牌 Logo 资源 · 当前显示 {filtered.length} 个
+          {hasActiveFilters || status !== 'Exhausted'
+            ? `（已加载 ${logos.length} 个）`
+            : `（共 ${logos.length} 个）`}
         </p>
       </div>
 
