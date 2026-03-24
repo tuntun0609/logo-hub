@@ -16,10 +16,10 @@ import {
   MessageSquarePlus,
   Monitor,
   Moon,
+  Search,
   Sparkles,
   Sun,
   UserCog,
-  Users,
   Wrench,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -51,16 +51,16 @@ import {
 } from '@/components/ui/sidebar'
 
 const discoverItems = [
-  { title: 'Home', url: '/', icon: Home },
-  { title: 'Brand Logos', url: '/brand-logos', icon: GalleryVerticalEnd },
-  { title: 'Gallery', icon: Images, badge: 'New' },
-  { title: 'Navigate', icon: Compass },
-  { title: 'Authors', icon: Users },
+  { title: '首页', url: '/', icon: Home },
+  { title: 'Logo 案例', url: '/logos', icon: GalleryVerticalEnd },
+  { title: '网站导航', url: '/sites', icon: Compass },
+  { title: '统一搜索', url: '/search', icon: Search, badge: 'P0' },
+  { title: '专题内容', icon: Images, badge: 'Soon' },
 ]
 
 const toolItems = [
-  { title: 'Generate', icon: Sparkles, badge: 'Beta' },
-  { title: 'Tools', url: '/tools', icon: Wrench },
+  { title: 'Logo 生成', icon: Sparkles, badge: 'Beta' },
+  { title: '工具库', url: '/tools', icon: Wrench },
 ]
 
 function getUserInitials(name?: string | null) {
@@ -82,10 +82,18 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
 
   const withActive = (items: typeof discoverItems) =>
-    items.map((item) => ({
-      ...item,
-      isActive: item.url ? pathname === item.url : false,
-    }))
+    items.map((item) => {
+      if (!item.url) {
+        return { ...item, isActive: false }
+      }
+
+      const isRoot = item.url === '/'
+      const isActive = isRoot
+        ? pathname === '/'
+        : pathname === item.url || pathname.startsWith(`${item.url}/`)
+
+      return { ...item, isActive }
+    })
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
@@ -100,7 +108,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Logo Hub</span>
                   <span className="truncate text-muted-foreground text-xs">
-                    Platform
+                    Tool + Content + Directory
                   </span>
                 </div>
               </SidebarMenuButton>
