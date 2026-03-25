@@ -34,6 +34,42 @@ export const listVisiblePaginated = query({
   },
 })
 
+export const searchVisiblePaginated = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+    query: v.optional(v.string()),
+    category: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const searchQuery = args.query?.trim()
+
+    if (searchQuery) {
+      return await ctx.db
+        .query('brand_logos')
+        .withSearchIndex('search_name', (q) =>
+          args.category
+            ? q
+                .search('name', searchQuery)
+                .eq('visible', true)
+                .eq('category', args.category)
+            : q.search('name', searchQuery).eq('visible', true)
+        )
+        .paginate(args.paginationOpts)
+    }
+
+    return await ctx.db
+      .query('brand_logos')
+      .withIndex('by_visible', (q) => q.eq('visible', true))
+      .filter((q) =>
+        args.category
+          ? q.eq(q.field('category'), args.category)
+          : q.eq(q.field('visible'), true)
+      )
+      .order('desc')
+      .paginate(args.paginationOpts)
+  },
+})
+
 export const get = query({
   args: { id: v.id('brand_logos') },
   handler: async (ctx, args) => {

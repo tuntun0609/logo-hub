@@ -19,7 +19,9 @@ export async function SidebarLayout({
         <AppSidebar />
         <SidebarInset>
           <MobileHeader />
-          <div className="flex flex-1 flex-col gap-4 p-2">{children}</div>
+          <div className="flex flex-1 flex-col gap-5 px-4 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-6 xl:px-8">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
