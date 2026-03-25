@@ -1,12 +1,20 @@
 'use client'
 
-import { Image, LayoutDashboard, Settings, Upload, Wrench } from 'lucide-react'
+import {
+  Globe,
+  Image,
+  LayoutDashboard,
+  Settings,
+  Upload,
+  Wrench,
+} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Logo 管理', href: '/admin/logos', icon: Image },
+  { label: '推荐网站', href: '/admin/sites', icon: Globe },
   { label: '文件上传', href: '/admin/upload', icon: Upload },
   { label: '工具管理', href: '/admin/tools', icon: Wrench },
   { label: '系统设置', href: '/admin/settings', icon: Settings },

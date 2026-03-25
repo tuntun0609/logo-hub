@@ -9,6 +9,7 @@
  */
 
 import type * as brandLogos from "../brandLogos.js";
+import type * as curatedSites from "../curatedSites.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   brandLogos: typeof brandLogos;
+  curatedSites: typeof curatedSites;
 }>;
 
 /**

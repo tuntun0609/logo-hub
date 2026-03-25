@@ -1,32 +1,51 @@
+'use client'
+
+import { api } from '@convex/_generated/api'
+import { useQuery } from 'convex/react'
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { curatedSites } from '@/data/platform'
-
-interface SitesPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
-function firstValue(value?: string | string[]) {
-  return Array.isArray(value) ? value[0] : value
-}
+import { Skeleton } from '@/components/ui/skeleton'
 
 function withCategory(category?: string) {
   return category ? `/sites?category=${encodeURIComponent(category)}` : '/sites'
 }
 
-export default async function SitesPage({ searchParams }: SitesPageProps) {
-  const params = await searchParams
-  const category = firstValue(params.category) ?? '全部'
-  const categories = [
-    '全部',
-    ...new Set(curatedSites.map((site) => site.category)),
-  ]
+function SitesPageSkeleton() {
+  return (
+    <div className="space-y-8">
+      <Skeleton className="h-48 rounded-[2rem]" />
+      <div className="flex gap-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton className="h-9 w-20 rounded-full" key={i} />
+        ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton className="h-48 rounded-[1.75rem]" key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default function SitesPage() {
+  const searchParams = useSearchParams()
+  const category = searchParams.get('category') ?? '全部'
+
+  const sites = useQuery(api.curatedSites.listVisible)
+
+  if (sites === undefined) {
+    return <SitesPageSkeleton />
+  }
+
+  const categories = ['全部', ...new Set(sites.map((site) => site.category))]
 
   const filteredSites =
     category === '全部'
-      ? curatedSites
-      : curatedSites.filter((site) => site.category === category)
+      ? sites
+      : sites.filter((site) => site.category === category)
 
   return (
     <div className="space-y-8">
@@ -46,9 +65,9 @@ export default async function SitesPage({ searchParams }: SitesPageProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               { label: '分类浏览', value: `${categories.length - 1} 个分类` },
-              { label: '收录站点', value: `${curatedSites.length} 个预置站点` },
+              { label: '收录站点', value: `${sites.length} 个站点` },
               { label: '推荐方式', value: '支持首页与详情页回流' },
-              { label: '后续扩展', value: '可接结构化后台录入' },
+              { label: '管理方式', value: '后台动态录入' },
             ].map((item) => (
               <div
                 className="rounded-[1.5rem] border border-border/60 bg-background/80 p-4"
@@ -83,7 +102,7 @@ export default async function SitesPage({ searchParams }: SitesPageProps) {
           <a
             className="group rounded-[1.75rem] border border-border/70 p-5 transition hover:-translate-y-1 hover:border-foreground/15"
             href={site.href}
-            key={site.name}
+            key={site._id}
             rel="noreferrer"
             target="_blank"
           >
@@ -97,7 +116,7 @@ export default async function SitesPage({ searchParams }: SitesPageProps) {
             </p>
             <p className="mt-4 text-sm">{site.notes}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {site.tags.map((tag) => (
+              {site.tags?.map((tag) => (
                 <Badge key={tag} variant="outline">
                   {tag}
                 </Badge>
