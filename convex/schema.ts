@@ -16,5 +16,8 @@ export default defineSchema({
   })
     .index('by_visible', ['visible'])
     .index('by_category', ['category'])
-    .searchIndex('search_name', { searchField: 'name' }),
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['visible', 'category'],
+    }),
 })

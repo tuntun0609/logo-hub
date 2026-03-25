@@ -5,7 +5,7 @@ import type { Doc } from '@convex/_generated/dataModel'
 import { usePaginatedQuery } from 'convex/react'
 import { ArrowRight, LayoutGrid, ScanSearch, Search, Tag } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -126,76 +126,38 @@ function EmptyState({
 }
 
 export function LogoCatalog() {
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('all')
+  const [activeTag, setActiveTag] = useState<string | null>(null)
+
+  const deferredQuery = useDeferredValue(query)
+  const searchQuery = deferredQuery.trim()
   const {
     results: logos,
     status,
     loadMore,
     isLoading,
   } = usePaginatedQuery(
-    api.brandLogos.listVisiblePaginated,
-    {},
+    api.brandLogos.searchVisiblePaginated,
+    {
+      query: searchQuery || undefined,
+      category: category === 'all' ? undefined : category,
+    },
     { initialNumItems: PAGE_SIZE }
   )
-
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('all')
-  const [activeTag, setActiveTag] = useState<string | null>(null)
-
-  const normalizedQuery = query.trim().toLowerCase()
-
-  const matchesQuery = (logo: BrandLogo) => {
-    if (!normalizedQuery) {
-      return true
-    }
-
-    return [
-      logo.name,
-      logo.description,
-      logo.category,
-      ...(logo.tags ?? []),
-    ].some((value) => value?.toLowerCase().includes(normalizedQuery))
-  }
-
-  const matchesCategory = (logo: BrandLogo, nextCategory = category) =>
-    nextCategory === 'all' || (logo.category ?? '其他') === nextCategory
 
   const matchesTag = (logo: BrandLogo, nextTag = activeTag) =>
     !nextTag || logo.tags?.includes(nextTag)
 
   const filtered = useMemo(
-    () =>
-      logos.filter(
-        (logo) =>
-          matchesQuery(logo) && matchesCategory(logo) && matchesTag(logo)
-      ),
-    [activeTag, category, logos, normalizedQuery]
+    () => logos.filter((logo) => matchesTag(logo)),
+    [activeTag, logos]
   )
-
-  const categoryCounts = useMemo(() => {
-    const counts = Object.fromEntries(
-      CATEGORIES.map((item) => [item, 0])
-    ) as Record<CategoryName, number>
-
-    for (const logo of logos) {
-      if (!(matchesQuery(logo) && matchesTag(logo))) {
-        continue
-      }
-
-      const nextCategory = (logo.category ?? '其他') as CategoryName
-      counts[nextCategory] = (counts[nextCategory] ?? 0) + 1
-    }
-
-    return counts
-  }, [activeTag, logos, normalizedQuery])
 
   const topTags = useMemo(() => {
     const counts = new Map<string, number>()
 
     for (const logo of logos) {
-      if (!(matchesQuery(logo) && matchesCategory(logo))) {
-        continue
-      }
-
       for (const tag of logo.tags ?? []) {
         counts.set(tag, (counts.get(tag) ?? 0) + 1)
       }
@@ -219,11 +181,10 @@ export function LogoCatalog() {
     }
 
     return tags.slice(0, 8)
-  }, [activeTag, category, logos, normalizedQuery])
+  }, [activeTag, logos])
 
   const isLoadingMore = status === 'LoadingMore'
   const canLoadMore = status === 'CanLoadMore'
-  const categoryCount = Object.values(categoryCounts).filter(Boolean).length
   const activeFilterLabels = [
     query
       ? {
@@ -302,22 +263,6 @@ export function LogoCatalog() {
                   先用关键词圈定方向，再按行业和热门标签逐层收窄，结果反馈会更明确。
                 </p>
               </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { label: '命中结果', value: filtered.length },
-                { label: '可浏览行业', value: categoryCount },
-                { label: '热门标签', value: topTags.length },
-              ].map((item) => (
-                <div
-                  className="min-w-[112px] rounded-2xl border border-border/60 bg-background/80 px-4 py-3"
-                  key={item.label}
-                >
-                  <p className="text-muted-foreground text-xs">{item.label}</p>
-                  <p className="mt-2 font-medium text-lg">{item.value}</p>
-                </div>
-              ))}
             </div>
           </div>
 

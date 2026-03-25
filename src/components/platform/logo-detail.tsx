@@ -162,10 +162,11 @@ export function LogoDetail({ id }: { id: string }) {
                   <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">
                     {logo.name}
                   </h1>
-                  <p className="mt-3 max-w-3xl text-base text-muted-foreground sm:text-lg">
-                    {logo.description ||
-                      '当前已补齐详情骨架，可继续承载品牌介绍、风格拆解、应用场景与相关推荐。'}
-                  </p>
+                  {logo.description && (
+                    <p className="mt-3 max-w-3xl text-base text-muted-foreground sm:text-lg">
+                      {logo.description}
+                    </p>
+                  )}
                 </div>
               </div>
               {logo.brandColor && (
