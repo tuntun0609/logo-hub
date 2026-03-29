@@ -1,12 +1,10 @@
 'use client'
 
 import { useClerk, useUser } from '@clerk/nextjs'
-import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react'
 import {
   ChevronsUpDown,
   CircleHelp,
   Compass,
-  GalleryVerticalEnd,
   Hexagon,
   Home,
   Images,
@@ -25,6 +23,7 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
+import type { ReactNode } from 'react'
 import { SidebarMenuItems } from '@/components/sidebar-menu-items'
 import { SidebarTrigger } from '@/components/sidebar-trigger'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -52,7 +51,6 @@ import {
 
 const discoverItems = [
   { title: '首页', url: '/', icon: Home },
-  { title: 'Logo 案例', url: '/logos', icon: GalleryVerticalEnd },
   { title: '网站导航', url: '/sites', icon: Compass },
   { title: '统一搜索', url: '/search', icon: Search, badge: 'P0' },
   { title: '专题内容', icon: Images, badge: 'Soon' },
@@ -76,7 +74,7 @@ function getUserInitials(name?: string | null) {
 }
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const { signOut, openUserProfile } = useClerk()
   const { setTheme } = useTheme()
   const pathname = usePathname()
@@ -94,6 +92,107 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       return { ...item, isActive }
     })
+
+  let footerUserMenu: ReactNode
+  if (!isLoaded) {
+    footerUserMenu = (
+      <SidebarMenuButton className="justify-center" disabled size="lg">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </SidebarMenuButton>
+    )
+  } else if (user) {
+    footerUserMenu = (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={(triggerProps) => (
+            <SidebarMenuButton
+              {...triggerProps}
+              size="lg"
+              tooltip={user.fullName || 'Account'}
+            >
+              <Avatar className="size-8 rounded-lg">
+                <AvatarImage alt={user.fullName || ''} src={user.imageUrl} />
+                <AvatarFallback className="rounded-lg">
+                  {getUserInitials(user.fullName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">{user.fullName}</span>
+                <span className="truncate text-muted-foreground text-xs">
+                  {user.primaryEmailAddress?.emailAddress}
+                </span>
+              </div>
+              <ChevronsUpDown className="ml-auto size-4" />
+            </SidebarMenuButton>
+          )}
+        />
+        <DropdownMenuContent
+          align="end"
+          className="w-60 p-2"
+          side="right"
+          sideOffset={8}
+        >
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-3 p-2 text-left text-sm">
+                <Avatar className="size-9 rounded-lg">
+                  <AvatarImage alt={user.fullName || ''} src={user.imageUrl} />
+                  <AvatarFallback className="rounded-lg">
+                    {getUserInitials(user.fullName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate font-semibold text-sm">
+                    {user.fullName}
+                  </span>
+                  <span className="mt-0.5 truncate text-muted-foreground text-xs">
+                    {user.primaryEmailAddress?.emailAddress}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator className="my-2" />
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              className="py-2"
+              onClick={() => openUserProfile()}
+            >
+              <UserCog />
+              Account
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2">
+              <CircleHelp />
+              Help
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2">
+              <MessageSquarePlus />
+              Feedback
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator className="my-2" />
+          <DropdownMenuGroup>
+            <DropdownMenuItem className="py-2" onClick={() => signOut()}>
+              <LogOut />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  } else {
+    footerUserMenu = (
+      <SidebarMenuButton
+        render={(buttonProps) => (
+          <Link {...buttonProps} href="/sign-in">
+            <LogIn />
+            <span>Sign In</span>
+          </Link>
+        )}
+        tooltip="Sign In"
+      />
+    )
+  }
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
@@ -166,114 +265,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </DropdownMenu>
           </SidebarMenuItem>
 
-          <SidebarMenuItem>
-            <Authenticated>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={(triggerProps) => (
-                    <SidebarMenuButton
-                      {...triggerProps}
-                      size="lg"
-                      tooltip={user?.fullName || 'Account'}
-                    >
-                      <Avatar className="size-8 rounded-lg">
-                        <AvatarImage
-                          alt={user?.fullName || ''}
-                          src={user?.imageUrl}
-                        />
-                        <AvatarFallback className="rounded-lg">
-                          {getUserInitials(user?.fullName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">
-                          {user?.fullName}
-                        </span>
-                        <span className="truncate text-muted-foreground text-xs">
-                          {user?.primaryEmailAddress?.emailAddress}
-                        </span>
-                      </div>
-                      <ChevronsUpDown className="ml-auto size-4" />
-                    </SidebarMenuButton>
-                  )}
-                />
-                <DropdownMenuContent
-                  align="end"
-                  className="w-60 p-2"
-                  side="right"
-                  sideOffset={8}
-                >
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel className="p-0 font-normal">
-                      <div className="flex items-center gap-3 p-2 text-left text-sm">
-                        <Avatar className="size-9 rounded-lg">
-                          <AvatarImage
-                            alt={user?.fullName || ''}
-                            src={user?.imageUrl}
-                          />
-                          <AvatarFallback className="rounded-lg">
-                            {getUserInitials(user?.fullName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="grid flex-1 text-left leading-tight">
-                          <span className="truncate font-semibold text-sm">
-                            {user?.fullName}
-                          </span>
-                          <span className="mt-0.5 truncate text-muted-foreground text-xs">
-                            {user?.primaryEmailAddress?.emailAddress}
-                          </span>
-                        </div>
-                      </div>
-                    </DropdownMenuLabel>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator className="my-2" />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      className="py-2"
-                      onClick={() => openUserProfile()}
-                    >
-                      <UserCog />
-                      Account
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="py-2">
-                      <CircleHelp />
-                      Help
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="py-2">
-                      <MessageSquarePlus />
-                      Feedback
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator className="my-2" />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      className="py-2"
-                      onClick={() => signOut()}
-                    >
-                      <LogOut />
-                      Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </Authenticated>
-            <Unauthenticated>
-              <SidebarMenuButton
-                render={(buttonProps) => (
-                  <Link {...buttonProps} href="/sign-in">
-                    <LogIn />
-                    <span>Sign In</span>
-                  </Link>
-                )}
-                tooltip="Sign In"
-              />
-            </Unauthenticated>
-            <AuthLoading>
-              <SidebarMenuButton className="justify-center" disabled size="lg">
-                <Loader2 className="size-8 animate-spin text-muted-foreground" />
-              </SidebarMenuButton>
-            </AuthLoading>
-          </SidebarMenuItem>
+          <SidebarMenuItem>{footerUserMenu}</SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

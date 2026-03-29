@@ -1,8 +1,8 @@
 'use client'
 
 import {
+  FolderTree,
   Globe,
-  Image,
   LayoutDashboard,
   Settings,
   Upload,
@@ -13,8 +13,8 @@ import { usePathname } from 'next/navigation'
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Logo 管理', href: '/admin/logos', icon: Image },
   { label: '推荐网站', href: '/admin/sites', icon: Globe },
+  { label: '网站分类', href: '/admin/categories', icon: FolderTree },
   { label: '文件上传', href: '/admin/upload', icon: Upload },
   { label: '工具管理', href: '/admin/tools', icon: Wrench },
   { label: '系统设置', href: '/admin/settings', icon: Settings },

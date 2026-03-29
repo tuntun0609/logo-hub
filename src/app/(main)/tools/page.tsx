@@ -1,4 +1,4 @@
-import { ExternalLink, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
@@ -13,8 +13,11 @@ function firstValue(value?: string | string[]) {
 }
 
 function ToolCard({ tool }: { tool: PlatformTool }) {
-  const content = (
-    <>
+  return (
+    <Link
+      className="group overflow-hidden rounded-xl border transition-colors hover:bg-muted/50"
+      href={tool.href}
+    >
       <div className="relative aspect-16/10 overflow-hidden rounded-t-xl bg-muted">
         {tool.thumbnail ? (
           <Image
@@ -27,9 +30,6 @@ function ToolCard({ tool }: { tool: PlatformTool }) {
         ) : (
           <div className="flex size-full items-center justify-center" />
         )}
-        {tool.isExternal && (
-          <ExternalLink className="absolute top-2 right-2 size-4 text-muted-foreground" />
-        )}
       </div>
       <div className="p-3">
         <h3 className="truncate font-medium text-sm">{tool.name}</h3>
@@ -37,33 +37,6 @@ function ToolCard({ tool }: { tool: PlatformTool }) {
           {tool.description}
         </p>
       </div>
-    </>
-  )
-
-  if (tool.isExternal) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    const externalHref = appUrl
-      ? `${tool.href}${tool.href.includes('?') ? '&' : '?'}ref=${appUrl}`
-      : tool.href
-
-    return (
-      <a
-        className="group overflow-hidden rounded-xl border transition-colors hover:bg-muted/50"
-        href={externalHref}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {content}
-      </a>
-    )
-  }
-
-  return (
-    <Link
-      className="group overflow-hidden rounded-xl border transition-colors hover:bg-muted/50"
-      href={tool.href}
-    >
-      {content}
     </Link>
   )
 }

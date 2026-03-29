@@ -9,7 +9,6 @@ interface SearchPageProps {
 
 const typeOptions: { label: string; value: SearchItemType | 'all' }[] = [
   { label: '全部', value: 'all' },
-  { label: '案例', value: 'logo' },
   { label: '工具', value: 'tool' },
   { label: '网站', value: 'site' },
   { label: '作者', value: 'author' },

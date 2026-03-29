@@ -1,8 +1,5 @@
 'use client'
 
-import { api } from '@convex/_generated/api'
-import type { Doc } from '@convex/_generated/dataModel'
-import { useMutation } from 'convex/react'
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,6 +11,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -39,8 +37,15 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { curatedSites as staticSites } from '@/data/platform'
-
-type CuratedSite = Doc<'curated_sites'>
+import type { SiteCategory } from '@/db/schema'
+import {
+  createSite,
+  deleteSite,
+  seedSites,
+  toggleSiteVisibility,
+  updateSite,
+} from '@/lib/actions/admin/sites'
+import type { CuratedSiteWithTags } from '@/lib/actions/sites'
 
 interface SiteFormData {
   category: string
@@ -64,7 +69,7 @@ const emptyForm: SiteFormData = {
   visible: true,
 }
 
-function siteToForm(site: CuratedSite): SiteFormData {
+function siteToForm(site: CuratedSiteWithTags): SiteFormData {
   return {
     name: site.name,
     href: site.href,
@@ -78,14 +83,19 @@ function siteToForm(site: CuratedSite): SiteFormData {
 }
 
 interface SiteFormDialogProps {
-  editing: CuratedSite | null
+  categories: SiteCategory[]
+  editing: CuratedSiteWithTags | null
   onClose: () => void
   open: boolean
 }
 
-function SiteFormDialog({ open, onClose, editing }: SiteFormDialogProps) {
-  const create = useMutation(api.curatedSites.create)
-  const update = useMutation(api.curatedSites.update)
+function SiteFormDialog({
+  open,
+  onClose,
+  editing,
+  categories,
+}: SiteFormDialogProps) {
+  const router = useRouter()
   const [form, setForm] = useState<SiteFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
 
@@ -127,12 +137,13 @@ function SiteFormDialog({ open, onClose, editing }: SiteFormDialogProps) {
       }
 
       if (editing) {
-        await update({ id: editing._id, ...data })
+        await updateSite(editing.id, data)
         toast.success('网站已更新')
       } else {
-        await create(data)
+        await createSite(data)
         toast.success('网站已创建')
       }
+      router.refresh()
       onClose()
     } catch {
       toast.error('操作失败，请重试')
@@ -199,13 +210,22 @@ function SiteFormDialog({ open, onClose, editing }: SiteFormDialogProps) {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="category">分类</Label>
-            <Input
-              id="category"
-              onChange={(e) => setField('category', e.target.value)}
-              placeholder="例如: 灵感案例"
+            <Label>分类</Label>
+            <Select
+              onValueChange={(value) => setField('category', value ?? '')}
               value={form.category}
-            />
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="选择分类" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.name}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="notes">推荐语</Label>
@@ -262,7 +282,7 @@ function SiteFormDialog({ open, onClose, editing }: SiteFormDialogProps) {
 interface DeleteConfirmDialogProps {
   onClose: () => void
   open: boolean
-  site: CuratedSite | null
+  site: CuratedSiteWithTags | null
 }
 
 function DeleteConfirmDialog({
@@ -270,7 +290,7 @@ function DeleteConfirmDialog({
   onClose,
   site,
 }: DeleteConfirmDialogProps) {
-  const remove = useMutation(api.curatedSites.remove)
+  const router = useRouter()
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
@@ -279,8 +299,9 @@ function DeleteConfirmDialog({
     }
     setDeleting(true)
     try {
-      await remove({ id: site._id })
+      await deleteSite(site.id)
       toast.success(`已删除 "${site.name}"`)
+      router.refresh()
       onClose()
     } catch {
       toast.error('删除失败')
@@ -383,7 +404,7 @@ function parseJsonSites(
 }
 
 function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
-  const seedData = useMutation(api.curatedSites.seed)
+  const router = useRouter()
   const [jsonText, setJsonText] = useState('')
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
@@ -405,8 +426,9 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
     }
     setImporting(true)
     try {
-      await seedData({ sites: result.sites })
+      await seedSites(result.sites)
       toast.success(`已成功导入 ${result.sites.length} 个站点`)
+      router.refresh()
       onClose()
       setJsonText('')
     } catch {
@@ -465,10 +487,10 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
 }
 
 interface SiteListItemProps {
-  onDelete: (site: CuratedSite) => void
-  onEdit: (site: CuratedSite) => void
-  onToggleVisibility: (site: CuratedSite) => void
-  site: CuratedSite
+  onDelete: (site: CuratedSiteWithTags) => void
+  onEdit: (site: CuratedSiteWithTags) => void
+  onToggleVisibility: (site: CuratedSiteWithTags) => void
+  site: CuratedSiteWithTags
 }
 
 function SiteListItem({
@@ -527,26 +549,23 @@ function SiteListItem({
   )
 }
 
+const PAGE_SIZE = 20
+
 interface AdminSitesContentProps {
-  isLoading: boolean
-  loadMore: () => void
-  pageSize: number
-  sites: CuratedSite[]
-  status: 'CanLoadMore' | 'Exhausted' | 'LoadingMore'
+  categories: SiteCategory[]
+  sites: CuratedSiteWithTags[]
 }
 
 export function AdminSitesContent({
   sites,
-  pageSize,
-  status,
-  isLoading,
-  loadMore,
+  categories,
 }: AdminSitesContentProps) {
-  const toggleVisibility = useMutation(api.curatedSites.toggleVisibility)
-  const seedData = useMutation(api.curatedSites.seed)
+  const router = useRouter()
   const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<CuratedSite | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<CuratedSite | null>(null)
+  const [editing, setEditing] = useState<CuratedSiteWithTags | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<CuratedSiteWithTags | null>(
+    null
+  )
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [visibilityFilter, setVisibilityFilter] = useState<string>('')
@@ -554,10 +573,7 @@ export function AdminSitesContent({
   const [seeding, setSeeding] = useState(false)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
 
-  const categories = useMemo(
-    () => [...new Set(sites.map((s) => s.category).filter(Boolean))].sort(),
-    [sites]
-  )
+  const categoryNames = categories.map((c) => c.name)
 
   const filtered = useMemo(
     () =>
@@ -579,27 +595,17 @@ export function AdminSitesContent({
     [sites, search, categoryFilter, visibilityFilter]
   )
 
-  const totalPages = Math.ceil(filtered.length / pageSize)
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const pageItems = filtered.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE
   )
 
   useEffect(() => {
     setCurrentPage(0)
   }, [search, categoryFilter, visibilityFilter])
 
-  useEffect(() => {
-    if (
-      status === 'CanLoadMore' &&
-      !isLoading &&
-      currentPage >= totalPages - 1
-    ) {
-      loadMore()
-    }
-  }, [currentPage, totalPages, status, isLoading, loadMore])
-
-  const handleEdit = (site: CuratedSite) => {
+  const handleEdit = (site: CuratedSiteWithTags) => {
     setEditing(site)
     setFormOpen(true)
   }
@@ -609,10 +615,11 @@ export function AdminSitesContent({
     setFormOpen(true)
   }
 
-  const handleToggleVisibility = async (site: CuratedSite) => {
+  const handleToggleVisibility = async (site: CuratedSiteWithTags) => {
     try {
-      await toggleVisibility({ id: site._id })
+      await toggleSiteVisibility(site.id, site.visible)
       toast.success(`已${site.visible ? '隐藏' : '显示'} "${site.name}"`)
+      router.refresh()
     } catch {
       toast.error('操作失败')
     }
@@ -621,17 +628,18 @@ export function AdminSitesContent({
   const handleSeed = async () => {
     setSeeding(true)
     try {
-      await seedData({
-        sites: staticSites.map((s) => ({
+      await seedSites(
+        staticSites.map((s) => ({
           name: s.name,
           description: s.description,
           href: s.href,
           category: s.category,
           notes: s.notes || undefined,
           tags: s.tags.length > 0 ? s.tags : undefined,
-        })),
-      })
+        }))
+      )
       toast.success(`已导入 ${staticSites.length} 个预置站点`)
+      router.refresh()
     } catch {
       toast.error('导入失败')
     } finally {
@@ -640,16 +648,7 @@ export function AdminSitesContent({
   }
 
   const canGoPrev = currentPage > 0
-  const canGoNext = currentPage < totalPages - 1 || status === 'CanLoadMore'
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage((p) => p + 1)
-    } else if (status === 'CanLoadMore') {
-      loadMore()
-      setCurrentPage((p) => p + 1)
-    }
-  }
+  const canGoNext = currentPage < totalPages - 1
 
   return (
     <div className="space-y-6">
@@ -659,7 +658,7 @@ export function AdminSitesContent({
           <h1 className="font-bold text-2xl">推荐网站管理</h1>
           <p className="mt-1 text-muted-foreground text-sm">
             管理所有推荐网站资源 · 共 {filtered.length} 个
-            {filtered.length !== sites.length && ` (已加载 ${sites.length} 个)`}
+            {filtered.length !== sites.length && ` (全部 ${sites.length} 个)`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -694,7 +693,7 @@ export function AdminSitesContent({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">所有分类</SelectItem>
-            {categories.map((cat) => (
+            {categoryNames.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
@@ -727,7 +726,7 @@ export function AdminSitesContent({
           <ul className="divide-y">
             {pageItems.map((site) => (
               <SiteListItem
-                key={site._id}
+                key={site.id}
                 onDelete={setDeleteTarget}
                 onEdit={handleEdit}
                 onToggleVisibility={handleToggleVisibility}
@@ -764,11 +763,10 @@ export function AdminSitesContent({
       )}
 
       {/* Pagination */}
-      {totalPages > 0 && (
+      {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm">
-            第 {currentPage + 1} 页
-            {status === 'Exhausted' && ` / ${totalPages} 页`}
+            第 {currentPage + 1} 页 / {totalPages} 页
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -781,13 +779,13 @@ export function AdminSitesContent({
               上一页
             </Button>
             <Button
-              disabled={!canGoNext || isLoading}
-              onClick={handleNextPage}
+              disabled={!canGoNext}
+              onClick={() => setCurrentPage((p) => p + 1)}
               size="sm"
               variant="outline"
             >
-              {isLoading ? '加载中...' : '下一页'}
-              {!isLoading && <ChevronRight className="ml-1 size-4" />}
+              下一页
+              <ChevronRight className="ml-1 size-4" />
             </Button>
           </div>
         </div>
@@ -795,6 +793,7 @@ export function AdminSitesContent({
 
       {/* Dialogs */}
       <SiteFormDialog
+        categories={categories}
         editing={editing}
         onClose={() => {
           setFormOpen(false)
