@@ -145,8 +145,12 @@ function SiteFormDialog({
       }
       router.refresh()
       onClose()
-    } catch {
-      toast.error('操作失败，请重试')
+    } catch (err) {
+      if (err instanceof Error && err.message === 'duplicate_name') {
+        toast.error(`站点名称 "${form.name.trim()}" 已存在`)
+      } else {
+        toast.error('操作失败，请重试')
+      }
     } finally {
       setSaving(false)
     }
@@ -426,8 +430,19 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
     }
     setImporting(true)
     try {
-      await seedSites(result.sites)
-      toast.success(`已成功导入 ${result.sites.length} 个站点`)
+      const { inserted, skipped } = await seedSites(result.sites)
+      if (inserted > 0) {
+        toast.success(`已成功导入 ${inserted} 个站点`)
+      }
+      if (skipped.length > 0) {
+        toast.warning(
+          `已跳过 ${skipped.length} 个重复站点：${skipped.slice(0, 3).join('、')}${skipped.length > 3 ? ' 等' : ''}`
+        )
+      }
+      if (inserted === 0) {
+        setError('所有站点均已存在，无新内容导入')
+        return
+      }
       router.refresh()
       onClose()
       setJsonText('')
@@ -628,7 +643,7 @@ export function AdminSitesContent({
   const handleSeed = async () => {
     setSeeding(true)
     try {
-      await seedSites(
+      const { inserted, skipped } = await seedSites(
         staticSites.map((s) => ({
           name: s.name,
           description: s.description,
@@ -638,8 +653,16 @@ export function AdminSitesContent({
           tags: s.tags.length > 0 ? s.tags : undefined,
         }))
       )
-      toast.success(`已导入 ${staticSites.length} 个预置站点`)
-      router.refresh()
+      if (inserted > 0) {
+        toast.success(`已导入 ${inserted} 个预置站点`)
+        router.refresh()
+      }
+      if (skipped.length > 0) {
+        toast.warning(`已跳过 ${skipped.length} 个重复站点`)
+      }
+      if (inserted === 0) {
+        toast.info('所有预置站点均已存在')
+      }
     } catch {
       toast.error('导入失败')
     } finally {
