@@ -5,14 +5,14 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Loader2,
   Pencil,
   Plus,
   Search,
   Trash2,
   Upload,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,6 +41,8 @@ import type { SiteCategory } from '@/db/schema'
 import {
   createSite,
   deleteSite,
+  type SearchSitesResult,
+  searchSites,
   seedSites,
   toggleSiteVisibility,
   updateSite,
@@ -95,7 +97,6 @@ function SiteFormDialog({
   editing,
   categories,
 }: SiteFormDialogProps) {
-  const router = useRouter()
   const [form, setForm] = useState<SiteFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
 
@@ -143,7 +144,6 @@ function SiteFormDialog({
         await createSite(data)
         toast.success('网站已创建')
       }
-      router.refresh()
       onClose()
     } catch (err) {
       if (err instanceof Error && err.message === 'duplicate_name') {
@@ -294,7 +294,6 @@ function DeleteConfirmDialog({
   onClose,
   site,
 }: DeleteConfirmDialogProps) {
-  const router = useRouter()
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
@@ -305,7 +304,6 @@ function DeleteConfirmDialog({
     try {
       await deleteSite(site.id)
       toast.success(`已删除 "${site.name}"`)
-      router.refresh()
       onClose()
     } catch {
       toast.error('删除失败')
@@ -408,7 +406,6 @@ function parseJsonSites(
 }
 
 function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
-  const router = useRouter()
   const [jsonText, setJsonText] = useState('')
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
@@ -443,7 +440,6 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
         setError('所有站点均已存在，无新内容导入')
         return
       }
-      router.refresh()
       onClose()
       setJsonText('')
     } catch {
@@ -568,14 +564,9 @@ const PAGE_SIZE = 20
 
 interface AdminSitesContentProps {
   categories: SiteCategory[]
-  sites: CuratedSiteWithTags[]
 }
 
-export function AdminSitesContent({
-  sites,
-  categories,
-}: AdminSitesContentProps) {
-  const router = useRouter()
+export function AdminSitesContent({ categories }: AdminSitesContentProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<CuratedSiteWithTags | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CuratedSiteWithTags | null>(
@@ -583,42 +574,60 @@ export function AdminSitesContent({
   )
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [visibilityFilter, setVisibilityFilter] = useState<string>('')
+  const [visibilityFilter, setVisibilityFilter] = useState<
+    '' | 'hidden' | 'visible'
+  >('')
   const [currentPage, setCurrentPage] = useState(0)
   const [seeding, setSeeding] = useState(false)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
 
+  const [data, setData] = useState<SearchSitesResult>({
+    sites: [],
+    total: 0,
+    totalPages: 0,
+  })
+  const [isPending, startTransition] = useTransition()
+
   const categoryNames = categories.map((c) => c.name)
 
-  const filtered = useMemo(
-    () =>
-      sites.filter((site) => {
-        if (search && !site.name.toLowerCase().includes(search.toLowerCase())) {
-          return false
-        }
-        if (categoryFilter && site.category !== categoryFilter) {
-          return false
-        }
-        if (visibilityFilter === 'visible' && !site.visible) {
-          return false
-        }
-        if (visibilityFilter === 'hidden' && site.visible) {
-          return false
-        }
-        return true
-      }),
-    [sites, search, categoryFilter, visibilityFilter]
+  const fetchSites = useCallback(
+    (page: number, s: string, cat: string, vis: '' | 'hidden' | 'visible') => {
+      startTransition(async () => {
+        const result = await searchSites({
+          search: s || undefined,
+          category: cat || undefined,
+          visibility: vis || undefined,
+          page,
+          pageSize: PAGE_SIZE,
+        })
+        setData(result)
+      })
+    },
+    []
   )
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const pageItems = filtered.slice(
-    currentPage * PAGE_SIZE,
-    (currentPage + 1) * PAGE_SIZE
-  )
-
+  // Initial load + refetch on filter/page changes
   useEffect(() => {
+    fetchSites(currentPage, search, categoryFilter, visibilityFilter)
+  }, [currentPage, search, categoryFilter, visibilityFilter, fetchSites])
+
+  // Reset page when filters change
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
     setCurrentPage(0)
-  }, [search, categoryFilter, visibilityFilter])
+  }
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value)
+    setCurrentPage(0)
+  }
+  const handleVisibilityChange = (value: string) => {
+    setVisibilityFilter(value as '' | 'hidden' | 'visible')
+    setCurrentPage(0)
+  }
+
+  const reload = () => {
+    fetchSites(currentPage, search, categoryFilter, visibilityFilter)
+  }
 
   const handleEdit = (site: CuratedSiteWithTags) => {
     setEditing(site)
@@ -634,7 +643,7 @@ export function AdminSitesContent({
     try {
       await toggleSiteVisibility(site.id, site.visible)
       toast.success(`已${site.visible ? '隐藏' : '显示'} "${site.name}"`)
-      router.refresh()
+      reload()
     } catch {
       toast.error('操作失败')
     }
@@ -655,7 +664,7 @@ export function AdminSitesContent({
       )
       if (inserted > 0) {
         toast.success(`已导入 ${inserted} 个预置站点`)
-        router.refresh()
+        reload()
       }
       if (skipped.length > 0) {
         toast.warning(`已跳过 ${skipped.length} 个重复站点`)
@@ -670,6 +679,8 @@ export function AdminSitesContent({
     }
   }
 
+  const { sites: pageItems, total, totalPages } = data
+  const hasFilters = !!(search || categoryFilter || visibilityFilter)
   const canGoPrev = currentPage > 0
   const canGoNext = currentPage < totalPages - 1
 
@@ -680,8 +691,7 @@ export function AdminSitesContent({
         <div>
           <h1 className="font-bold text-2xl">推荐网站管理</h1>
           <p className="mt-1 text-muted-foreground text-sm">
-            管理所有推荐网站资源 · 共 {filtered.length} 个
-            {filtered.length !== sites.length && ` (全部 ${sites.length} 个)`}
+            管理所有推荐网站资源 · 共 {total} 个
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -702,13 +712,13 @@ export function AdminSitesContent({
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-8"
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="搜索站点名称..."
             value={search}
           />
         </div>
         <Select
-          onValueChange={(value) => setCategoryFilter(value as string)}
+          onValueChange={(value) => handleCategoryChange(value as string)}
           value={categoryFilter}
         >
           <SelectTrigger>
@@ -724,7 +734,7 @@ export function AdminSitesContent({
           </SelectContent>
         </Select>
         <Select
-          onValueChange={(value) => setVisibilityFilter(value as string)}
+          onValueChange={(value) => handleVisibilityChange(value as string)}
           value={visibilityFilter}
         >
           <SelectTrigger>
@@ -736,6 +746,9 @@ export function AdminSitesContent({
             <SelectItem value="hidden">已隐藏</SelectItem>
           </SelectContent>
         </Select>
+        {isPending && (
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        )}
       </div>
 
       {/* List */}
@@ -761,11 +774,9 @@ export function AdminSitesContent({
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
           <p className="text-muted-foreground">
-            {search || categoryFilter || visibilityFilter
-              ? '没有找到匹配的站点'
-              : '还没有添加任何推荐网站'}
+            {hasFilters ? '没有找到匹配的站点' : '还没有添加任何推荐网站'}
           </p>
-          {!(search || categoryFilter || visibilityFilter) && (
+          {!hasFilters && (
             <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row">
               <Button onClick={handleCreate} variant="outline">
                 <Plus className="mr-1.5 size-4" />
@@ -821,16 +832,23 @@ export function AdminSitesContent({
         onClose={() => {
           setFormOpen(false)
           setEditing(null)
+          reload()
         }}
         open={formOpen}
       />
       <DeleteConfirmDialog
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => {
+          setDeleteTarget(null)
+          reload()
+        }}
         open={!!deleteTarget}
         site={deleteTarget}
       />
       <JsonImportDialog
-        onClose={() => setJsonImportOpen(false)}
+        onClose={() => {
+          setJsonImportOpen(false)
+          reload()
+        }}
         open={jsonImportOpen}
       />
     </div>

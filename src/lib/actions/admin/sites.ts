@@ -1,10 +1,65 @@
 'use server'
 
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, like } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/db'
 import { curatedSites } from '@/db/schema'
 import type { CuratedSiteWithTags } from '../sites'
+
+export interface SearchSitesParams {
+  category?: string
+  page?: number
+  pageSize?: number
+  search?: string
+  visibility?: '' | 'hidden' | 'visible'
+}
+
+export interface SearchSitesResult {
+  sites: CuratedSiteWithTags[]
+  total: number
+  totalPages: number
+}
+
+export async function searchSites(
+  params: SearchSitesParams = {}
+): Promise<SearchSitesResult> {
+  const { search, category, visibility, page = 0, pageSize = 20 } = params
+
+  const conditions: ReturnType<typeof eq>[] = []
+  if (search) {
+    conditions.push(like(curatedSites.name, `%${search}%`))
+  }
+  if (category) {
+    conditions.push(eq(curatedSites.category, category))
+  }
+  if (visibility === 'visible') {
+    conditions.push(eq(curatedSites.visible, true))
+  } else if (visibility === 'hidden') {
+    conditions.push(eq(curatedSites.visible, false))
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select()
+      .from(curatedSites)
+      .where(where)
+      .orderBy(asc(curatedSites.order), asc(curatedSites.id))
+      .limit(pageSize)
+      .offset(page * pageSize),
+    db.select({ total: count() }).from(curatedSites).where(where),
+  ])
+
+  return {
+    sites: rows.map((s) => ({
+      ...s,
+      tags: s.tags ? (JSON.parse(s.tags) as string[]) : null,
+    })),
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  }
+}
 
 export async function getAllSites(): Promise<CuratedSiteWithTags[]> {
   const rows = await db
