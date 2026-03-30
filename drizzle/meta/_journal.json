@@ -8,6 +8,13 @@
       "when": 1774694823701,
       "tag": "0000_black_blackheart",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1774833603568,
+      "tag": "0001_daily_mandarin",
+      "breakpoints": true
     }
   ]
 }

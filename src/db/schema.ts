@@ -21,6 +21,22 @@ export const curatedSites = sqliteTable('curated_sites', {
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 
+export const authors = sqliteTable('authors', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  avatar: text('avatar'),
+  bio: text('bio'),
+  specialty: text('specialty'),
+  websiteUrl: text('website_url'),
+  featuredWorks: text('featured_works'),
+  visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
+  featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
+  order: integer('order'),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+})
+
+export type Author = typeof authors.$inferSelect
+export type NewAuthor = typeof authors.$inferInsert
 export type SiteCategory = typeof siteCategories.$inferSelect
 export type NewSiteCategory = typeof siteCategories.$inferInsert
 export type CuratedSite = typeof curatedSites.$inferSelect

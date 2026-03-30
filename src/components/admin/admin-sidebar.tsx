@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Settings,
   Upload,
+  Users,
   Wrench,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -15,6 +16,7 @@ const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: '推荐网站', href: '/admin/sites', icon: Globe },
   { label: '网站分类', href: '/admin/categories', icon: FolderTree },
+  { label: '作者管理', href: '/admin/authors', icon: Users },
   { label: '文件上传', href: '/admin/upload', icon: Upload },
   { label: '工具管理', href: '/admin/tools', icon: Wrench },
   { label: '系统设置', href: '/admin/settings', icon: Settings },

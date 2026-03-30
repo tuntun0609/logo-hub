@@ -18,6 +18,7 @@ import {
   Sparkles,
   Sun,
   UserCog,
+  Users,
   Wrench,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -53,6 +54,7 @@ const discoverItems = [
   { title: '首页', url: '/', icon: Home },
   { title: '网站导航', url: '/sites', icon: Compass },
   { title: '统一搜索', url: '/search', icon: Search, badge: 'P0' },
+  { title: '作者专区', url: '/authors', icon: Users },
   { title: '专题内容', icon: Images, badge: 'Soon' },
 ]
 
