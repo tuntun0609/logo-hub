@@ -17,7 +17,6 @@ export function getDb() {
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_t, prop) {
-    // biome-ignore lint/suspicious/noExplicitAny: proxy delegation
     return (getDb() as any)[prop]
   },
 })
