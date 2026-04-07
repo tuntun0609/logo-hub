@@ -1,13 +1,14 @@
 import { ArrowRight, Compass, Search, Wrench } from 'lucide-react'
 import Link from 'next/link'
+import { SiteCard } from '@/components/site-card'
 import { Badge } from '@/components/ui/badge'
 import {
   authorHighlights,
-  curatedSites,
   platformIdeas,
   toolGroups,
   topicHighlights,
 } from '@/data/platform'
+import { getSites } from '@/lib/actions/sites'
 
 const primaryButtonClassName =
   'inline-flex h-9 items-center justify-center rounded-2xl bg-primary px-5 text-primary-foreground text-sm font-medium transition hover:bg-primary/90'
@@ -32,7 +33,8 @@ const primaryModules = [
 
 const journeySteps = ['获取灵感', '选择工具', '形成方案', '持续回访']
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [featuredSites] = await Promise.all([getSites()])
   const featuredTools = toolGroups.flatMap((group) => group.tools).slice(0, 4)
 
   return (
@@ -211,21 +213,12 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {curatedSites.slice(0, 4).map((site) => (
-            <a
-              className="rounded-[1.5rem] border border-border/60 p-5 transition hover:-translate-y-1 hover:border-foreground/15"
-              href={site.href}
-              key={site.name}
-              rel="noreferrer"
-              target="_blank"
-            >
-              <Badge variant="outline">{site.category}</Badge>
-              <h3 className="mt-4 font-medium text-lg">{site.name}</h3>
-              <p className="mt-2 text-muted-foreground text-sm">
-                {site.description}
-              </p>
-              <p className="mt-3 text-sm">{site.notes}</p>
-            </a>
+          {featuredSites.slice(0, 4).map((site, index) => (
+            <SiteCard
+              imageLoading={index === 0 ? 'eager' : undefined}
+              key={site.id}
+              site={site}
+            />
           ))}
         </div>
       </section>

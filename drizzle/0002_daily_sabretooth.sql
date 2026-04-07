@@ -1,0 +1,1 @@
+ALTER TABLE `curated_sites` ADD `image` text;

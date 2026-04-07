@@ -7,5 +7,17 @@ export function ThemeProvider({
   children,
   ...props
 }: ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+  const scriptProps =
+    typeof window === 'undefined'
+      ? props.scriptProps
+      : {
+          ...props.scriptProps,
+          type: 'application/json',
+        }
+
+  return (
+    <NextThemesProvider {...props} scriptProps={scriptProps}>
+      {children}
+    </NextThemesProvider>
+  )
 }

@@ -1,16 +1,19 @@
 'use client'
 
+import { useUploadFiles } from '@better-upload/client'
 import {
   ChevronLeft,
   ChevronRight,
   Eye,
   EyeOff,
+  ImageIcon,
   Loader2,
   Pencil,
   Plus,
   Search,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -49,10 +52,17 @@ import {
 } from '@/lib/actions/admin/sites'
 import type { CuratedSiteWithTags } from '@/lib/actions/sites'
 
+const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || ''
+
+function stripTrailingSlash(url: string) {
+  return url.endsWith('/') ? url.slice(0, -1) : url
+}
+
 interface SiteFormData {
   category: string
   description: string
   href: string
+  image: string
   name: string
   notes: string
   order: string
@@ -65,6 +75,7 @@ const emptyForm: SiteFormData = {
   href: '',
   description: '',
   category: '',
+  image: '',
   notes: '',
   tags: '',
   order: '',
@@ -77,6 +88,7 @@ function siteToForm(site: CuratedSiteWithTags): SiteFormData {
     href: site.href,
     description: site.description,
     category: site.category,
+    image: site.image ?? '',
     notes: site.notes ?? '',
     tags: site.tags?.join(', ') ?? '',
     order: site.order?.toString() ?? '',
@@ -99,6 +111,24 @@ function SiteFormDialog({
 }: SiteFormDialogProps) {
   const [form, setForm] = useState<SiteFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
+
+  const { control: uploadControl } = useUploadFiles({
+    route: 'logos',
+    onUploadComplete: ({ files: uploaded, metadata }) => {
+      const base =
+        typeof metadata.r2PublicUrl === 'string' && metadata.r2PublicUrl
+          ? stripTrailingSlash(metadata.r2PublicUrl)
+          : stripTrailingSlash(R2_PUBLIC_URL)
+      if (uploaded.length > 0) {
+        const url = `${base}/${uploaded[0].objectInfo.key}`
+        setForm((prev) => ({ ...prev, image: url }))
+        toast.success('截图已上传')
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || '上传失败')
+    },
+  })
 
   useEffect(() => {
     if (open) {
@@ -126,6 +156,7 @@ function SiteFormDialog({
         href: form.href.trim(),
         description: form.description.trim(),
         category: form.category.trim(),
+        image: form.image.trim() || undefined,
         notes: form.notes.trim() || undefined,
         tags: form.tags.trim()
           ? form.tags
@@ -212,6 +243,51 @@ function SiteFormDialog({
               rows={3}
               value={form.description}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label>网站截图</Label>
+            {form.image ? (
+              <div className="relative">
+                <img
+                  alt="网站截图"
+                  className="aspect-video w-full rounded-lg border object-cover"
+                  height={180}
+                  src={form.image}
+                  width={320}
+                />
+                <Button
+                  className="absolute top-2 right-2"
+                  onClick={() => setField('image', '')}
+                  size="icon-xs"
+                  type="button"
+                  variant="secondary"
+                >
+                  <X className="size-3" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-6 transition hover:bg-muted/50">
+                <ImageIcon className="size-6 text-muted-foreground" />
+                <span className="text-muted-foreground text-xs">
+                  {uploadControl.isPending
+                    ? '上传中...'
+                    : '点击上传网站截图（16:10 推荐）'}
+                </span>
+                <input
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadControl.isPending}
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? [])
+                    if (files.length > 0) {
+                      uploadControl.upload(files)
+                    }
+                    e.target.value = ''
+                  }}
+                  type="file"
+                />
+              </label>
+            )}
           </div>
           <div className="grid gap-2">
             <Label>分类</Label>

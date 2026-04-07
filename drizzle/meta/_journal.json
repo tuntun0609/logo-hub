@@ -15,6 +15,13 @@
       "when": 1774833603568,
       "tag": "0001_daily_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775577124989,
+      "tag": "0002_daily_sabretooth",
+      "breakpoints": true
     }
   ]
 }

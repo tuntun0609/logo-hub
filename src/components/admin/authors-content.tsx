@@ -8,6 +8,7 @@ import {
   Plus,
   Star,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState, useTransition } from 'react'
@@ -32,6 +33,7 @@ import {
   createAuthor,
   deleteAuthor,
   getAllAuthors,
+  seedAuthors,
   toggleAuthorFeatured,
   toggleAuthorVisibility,
   updateAuthor,
@@ -458,6 +460,180 @@ function AuthorListItem({
   )
 }
 
+// --- JSON Import Dialog ---
+
+interface JsonAuthorInput {
+  avatar?: string
+  bio?: string
+  featured?: boolean
+  featuredWorks?: { title: string; url: string }[]
+  name: string
+  specialty?: string[]
+  websiteUrl?: string
+}
+
+const JSON_EXAMPLE = `[
+  {
+    "name": "作者名称",
+    "bio": "作者简介",
+    "specialty": ["品牌设计", "字体设计"],
+    "websiteUrl": "https://example.com",
+    "avatar": "https://example.com/avatar.jpg",
+    "featured": false,
+    "featuredWorks": [
+      { "title": "作品名称", "url": "https://example.com/work" }
+    ]
+  }
+]`
+
+function parseJsonAuthors(
+  jsonText: string
+): { error: string } | { authors: JsonAuthorInput[] } {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(jsonText)
+  } catch {
+    return { error: 'JSON 格式不正确，请检查语法' }
+  }
+  if (!Array.isArray(parsed)) {
+    return { error: 'JSON 必须是一个数组 [ ... ]' }
+  }
+  if (parsed.length === 0) {
+    return { error: '数组为空，没有可导入的数据' }
+  }
+  const authors: JsonAuthorInput[] = []
+  for (let i = 0; i < parsed.length; i++) {
+    const item = parsed[i] as Record<string, unknown>
+    if (typeof item.name !== 'string') {
+      return { error: `第 ${i + 1} 条数据缺少必填字段 name` }
+    }
+    authors.push({
+      name: item.name,
+      bio: typeof item.bio === 'string' ? item.bio : undefined,
+      avatar: typeof item.avatar === 'string' ? item.avatar : undefined,
+      websiteUrl:
+        typeof item.websiteUrl === 'string' ? item.websiteUrl : undefined,
+      featured: typeof item.featured === 'boolean' ? item.featured : undefined,
+      specialty: Array.isArray(item.specialty)
+        ? (item.specialty as unknown[])
+            .filter((s) => typeof s === 'string')
+            .map(String)
+        : undefined,
+      featuredWorks: Array.isArray(item.featuredWorks)
+        ? (item.featuredWorks as unknown[])
+            .filter(
+              (w) =>
+                typeof w === 'object' &&
+                w !== null &&
+                typeof (w as Record<string, unknown>).title === 'string' &&
+                typeof (w as Record<string, unknown>).url === 'string'
+            )
+            .map((w) => ({
+              title: (w as Record<string, string>).title,
+              url: (w as Record<string, string>).url,
+            }))
+        : undefined,
+    })
+  }
+  return { authors }
+}
+
+interface JsonImportDialogProps {
+  onClose: () => void
+  open: boolean
+}
+
+function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
+  const [jsonText, setJsonText] = useState('')
+  const [error, setError] = useState('')
+  const [importing, setImporting] = useState(false)
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      onClose()
+      setJsonText('')
+      setError('')
+    }
+  }
+
+  const handleImport = async () => {
+    setError('')
+    const result = parseJsonAuthors(jsonText)
+    if ('error' in result) {
+      setError(result.error)
+      return
+    }
+    setImporting(true)
+    try {
+      const { inserted, skipped } = await seedAuthors(result.authors)
+      if (inserted > 0) {
+        toast.success(`已成功导入 ${inserted} 位作者`)
+      }
+      if (skipped.length > 0) {
+        toast.warning(
+          `已跳过 ${skipped.length} 位重复作者：${skipped.slice(0, 3).join('、')}${skipped.length > 3 ? ' 等' : ''}`
+        )
+      }
+      if (inserted === 0) {
+        setError('所有作者均已存在，无新内容导入')
+        return
+      }
+      onClose()
+      setJsonText('')
+    } catch {
+      setError('导入失败，请重试')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={handleOpenChange} open={open}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>批量导入作者</DialogTitle>
+          <DialogDescription>
+            粘贴 JSON 数组，每条至少需包含 name 字段
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label>JSON 数据</Label>
+            <Textarea
+              className="font-mono text-xs"
+              onChange={(e) => {
+                setJsonText(e.target.value)
+                setError('')
+              }}
+              placeholder={JSON_EXAMPLE}
+              rows={12}
+              value={jsonText}
+            />
+            {error && <p className="text-destructive text-xs">{error}</p>}
+          </div>
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+              查看格式示例
+            </summary>
+            <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 text-muted-foreground">
+              {JSON_EXAMPLE}
+            </pre>
+          </details>
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>取消</DialogClose>
+          <Button
+            disabled={importing || !jsonText.trim()}
+            onClick={handleImport}
+          >
+            {importing ? '导入中...' : '开始导入'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // --- Main Content ---
 
 export function AdminAuthorsContent() {
@@ -467,6 +643,7 @@ export function AdminAuthorsContent() {
   const [deleteTarget, setDeleteTarget] = useState<AuthorWithParsed | null>(
     null
   )
+  const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const fetchAuthors = useCallback(() => {
@@ -521,10 +698,16 @@ export function AdminAuthorsContent() {
             管理所有作者信息 · 共 {authors.length} 位
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="mr-1.5 size-4" />
-          新增作者
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setJsonImportOpen(true)} variant="outline">
+            <Upload className="mr-1.5 size-4" />
+            批量导入
+          </Button>
+          <Button onClick={handleCreate}>
+            <Plus className="mr-1.5 size-4" />
+            新增作者
+          </Button>
+        </div>
       </div>
 
       {isPending && (
@@ -582,6 +765,13 @@ export function AdminAuthorsContent() {
           fetchAuthors()
         }}
         open={!!deleteTarget}
+      />
+      <JsonImportDialog
+        onClose={() => {
+          setJsonImportOpen(false)
+          fetchAuthors()
+        }}
+        open={jsonImportOpen}
       />
     </div>
   )

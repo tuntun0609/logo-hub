@@ -76,6 +76,7 @@ interface SiteInput {
   category: string
   description: string
   href: string
+  image?: string
   name: string
   notes?: string
   order?: number
@@ -97,6 +98,7 @@ export async function createSite(data: SiteInput) {
     description: data.description,
     href: data.href,
     category: data.category,
+    image: data.image ?? null,
     notes: data.notes ?? null,
     tags: data.tags ? JSON.stringify(data.tags) : null,
     order: data.order ?? null,
@@ -122,6 +124,7 @@ export async function updateSite(id: number, data: SiteInput) {
       description: data.description,
       href: data.href,
       category: data.category,
+      image: data.image ?? null,
       notes: data.notes ?? null,
       tags: data.tags ? JSON.stringify(data.tags) : null,
       order: data.order ?? null,

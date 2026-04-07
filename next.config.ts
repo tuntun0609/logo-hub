@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
       path: { browser: './src/lib/noop.js' },
     },
   },
+  images: {
+    remotePatterns: [
+      {
+        hostname: 'oss.logohub.art',
+      },
+    ],
+  },
   async headers() {
     return [
       {

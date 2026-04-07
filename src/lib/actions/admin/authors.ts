@@ -1,6 +1,6 @@
 'use server'
 
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/db'
 import { authors } from '@/db/schema'
@@ -96,4 +96,71 @@ export async function toggleAuthorFeatured(id: number, featured: boolean) {
     .where(eq(authors.id, id))
   revalidatePath('/authors')
   revalidatePath('/admin/authors')
+}
+
+export async function seedAuthors(
+  items: Array<{
+    avatar?: string
+    bio?: string
+    featured?: boolean
+    featuredWorks?: { title: string; url: string }[]
+    name: string
+    specialty?: string[]
+    websiteUrl?: string
+  }>
+): Promise<{ inserted: number; skipped: string[] }> {
+  const seen = new Set<string>()
+  const deduped = items.filter((a) => {
+    if (seen.has(a.name)) {
+      return false
+    }
+    seen.add(a.name)
+    return true
+  })
+
+  const names = deduped.map((a) => a.name)
+  const existingRows = await db
+    .select({ name: authors.name })
+    .from(authors)
+    .where(inArray(authors.name, names))
+  const existingNames = new Set(existingRows.map((r) => r.name))
+
+  const toInsert = deduped.filter((a) => !existingNames.has(a.name))
+  const skipped = deduped
+    .filter((a) => existingNames.has(a.name))
+    .map((a) => a.name)
+
+  const intraBatchSkipped = items
+    .filter((a, i) => {
+      const first = items.findIndex((x) => x.name === a.name)
+      return first !== i
+    })
+    .map((a) => a.name)
+    .filter((n, i, arr) => arr.indexOf(n) === i)
+
+  if (toInsert.length > 0) {
+    await db.insert(authors).values(
+      toInsert.map((a) => ({
+        name: a.name,
+        avatar: a.avatar || null,
+        bio: a.bio || null,
+        specialty: a.specialty?.length ? JSON.stringify(a.specialty) : null,
+        websiteUrl: a.websiteUrl || null,
+        featuredWorks: a.featuredWorks?.length
+          ? JSON.stringify(a.featuredWorks)
+          : null,
+        visible: true,
+        featured: a.featured ?? false,
+      }))
+    )
+    revalidatePath('/authors')
+    revalidatePath('/admin/authors')
+  }
+
+  return {
+    inserted: toInsert.length,
+    skipped: [...skipped, ...intraBatchSkipped].filter(
+      (n, i, arr) => arr.indexOf(n) === i
+    ),
+  }
 }

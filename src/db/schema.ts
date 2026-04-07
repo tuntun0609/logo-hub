@@ -15,6 +15,7 @@ export const curatedSites = sqliteTable('curated_sites', {
   href: text('href').notNull(),
   category: text('category').notNull().default(''),
   notes: text('notes'),
+  image: text('image'),
   tags: text('tags'), // JSON-encoded string[]
   visible: integer('visible', { mode: 'boolean' }).notNull().default(true),
   order: integer('order'),
