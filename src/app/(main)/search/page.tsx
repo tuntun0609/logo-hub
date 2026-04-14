@@ -56,75 +56,44 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return matchesType && matchesQuery
   })
 
-  const counts = typeOptions
-    .filter((option) => option.value !== 'all')
-    .map((option) => ({
-      ...option,
-      count: allItems.filter((item) => item.type === option.value).length,
-    }))
-
   return (
     <div className="space-y-8">
-      <section className="rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.04),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.98))] p-6 sm:p-8">
-        <Badge className="rounded-full px-3 py-1 text-xs" variant="secondary">
-          P0 主骨架 · 统一搜索
-        </Badge>
-        <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
-          <div>
-            <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">
-              一个入口检索案例、工具、网站、作者与设计方案
-            </h1>
-            <p className="mt-3 max-w-3xl text-base text-muted-foreground sm:text-lg">
-              先搭出跨内容类型的搜索骨架，后续再接入真实内容模型、筛选器与返回状态保留。
-            </p>
-
-            <form
-              action="/search"
-              className="mt-6 flex flex-col gap-3 sm:flex-row"
-            >
-              <div className="relative flex-1">
-                <Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  className="h-12 w-full rounded-2xl border border-border/70 bg-background pr-4 pl-11 text-sm outline-none transition focus:border-primary"
-                  defaultValue={q}
-                  name="q"
-                  placeholder="搜索关键词，例如：科技、极简、SVG、品牌升级"
-                  type="search"
-                />
-              </div>
-              <input name="type" type="hidden" value={type} />
-              <button
-                className="h-12 rounded-2xl bg-primary px-5 font-medium text-primary-foreground"
-                type="submit"
-              >
-                搜索
-              </button>
-            </form>
-          </div>
-
-          <div className="grid gap-3">
-            {counts.map((item) => (
-              <div
-                className="rounded-[1.5rem] border border-border/60 bg-background/80 p-4"
-                key={item.value}
-              >
-                <p className="text-muted-foreground text-xs">{item.label}</p>
-                <p className="mt-2 font-medium text-lg">
-                  {item.count} 条预置内容
-                </p>
-              </div>
-            ))}
-          </div>
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-semibold text-2xl tracking-tight">统一搜索</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground text-sm">
+            跨内容类型检索工具、网站、作者与设计方案。
+          </p>
         </div>
-      </section>
 
-      <section className="flex flex-wrap gap-2">
+        <form action="/search" className="flex max-w-xl gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              className="h-10 w-full rounded-lg border bg-background pr-4 pl-10 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-foreground/25 focus:ring-1 focus:ring-foreground/10"
+              defaultValue={q}
+              name="q"
+              placeholder="搜索关键词，例如：科技、极简、SVG、品牌升级"
+              type="search"
+            />
+          </div>
+          <input name="type" type="hidden" value={type} />
+          <button
+            className="h-10 shrink-0 rounded-lg bg-foreground px-4 font-medium text-background text-sm transition hover:bg-foreground/90"
+            type="submit"
+          >
+            搜索
+          </button>
+        </form>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
         {typeOptions.map((option) => (
           <Link
             className={
               option.value === type
-                ? 'rounded-full border border-primary bg-primary px-4 py-2 text-primary-foreground text-sm'
-                : 'rounded-full border px-4 py-2 text-muted-foreground text-sm transition hover:text-foreground'
+                ? 'rounded-lg bg-foreground px-3 py-1.5 font-medium text-background text-sm'
+                : 'rounded-lg border px-3 py-1.5 text-muted-foreground text-sm transition hover:text-foreground'
             }
             href={withParams({ q }, { type: option.value })}
             key={option.value}
@@ -132,16 +101,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {option.label}
           </Link>
         ))}
-      </section>
+      </div>
 
       <section className="space-y-4">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-xl">搜索结果</h2>
-            <p className="mt-1 text-muted-foreground text-sm">
-              共找到 {filtered.length} 条结果
-            </p>
-          </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-muted-foreground text-sm">
+            共 {filtered.length} 条结果
+          </p>
           {q && (
             <Link
               className="text-muted-foreground text-sm transition hover:text-foreground"
@@ -153,64 +119,67 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
 
         {filtered.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((item) =>
-              item.isExternal ? (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((item) => {
+              const cardClass =
+                'group rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40'
+              const content = (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="secondary">{item.type}</Badge>
+                    {item.isExternal ? (
+                      <ExternalLink className="size-3.5 text-muted-foreground/50" />
+                    ) : (
+                      <ArrowRight className="size-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+                    )}
+                  </div>
+                  <h3 className="mt-3 font-medium text-sm">{item.title}</h3>
+                  <p className="mt-1.5 line-clamp-2 text-muted-foreground text-xs leading-relaxed">
+                    {item.description}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <Badge className="text-[11px]" variant="outline">
+                      {item.category}
+                    </Badge>
+                    {item.tags.slice(0, 2).map((tag) => (
+                      <Badge
+                        className="text-[11px]"
+                        key={tag}
+                        variant="outline"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </>
+              )
+
+              return item.isExternal ? (
                 <a
-                  className="group rounded-[1.75rem] border border-border/70 p-5 transition hover:-translate-y-1 hover:border-foreground/15"
+                  className={cardClass}
                   href={item.href}
                   key={`${item.type}-${item.title}`}
                   rel="noreferrer"
                   target="_blank"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <Badge variant="secondary">{item.type}</Badge>
-                    <ExternalLink className="size-4 text-muted-foreground" />
-                  </div>
-                  <h3 className="mt-4 font-medium text-lg">{item.title}</h3>
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    {item.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge variant="outline">{item.category}</Badge>
-                    {item.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  {content}
                 </a>
               ) : (
                 <Link
-                  className="group rounded-[1.75rem] border border-border/70 p-5 transition hover:-translate-y-1 hover:border-foreground/15"
+                  className={cardClass}
                   href={item.href}
                   key={`${item.type}-${item.title}`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <Badge variant="secondary">{item.type}</Badge>
-                    <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-1" />
-                  </div>
-                  <h3 className="mt-4 font-medium text-lg">{item.title}</h3>
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    {item.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge variant="outline">{item.category}</Badge>
-                    {item.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  {content}
                 </Link>
               )
-            )}
+            })}
           </div>
         ) : (
-          <div className="rounded-[2rem] border border-dashed p-10 text-center">
-            <p className="font-medium text-lg">没有匹配结果</p>
-            <p className="mt-2 text-muted-foreground text-sm">
-              试试搜索“品牌升级”“科技”“AI”“字体”“极简”等关键词。
+          <div className="py-20 text-center">
+            <p className="font-medium text-muted-foreground">没有匹配结果</p>
+            <p className="mt-2 text-muted-foreground/70 text-sm">
+              试试搜索"品牌升级""科技""AI""字体""极简"等关键词。
             </p>
           </div>
         )}

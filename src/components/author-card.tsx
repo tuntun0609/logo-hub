@@ -17,20 +17,26 @@ function getInitials(name: string) {
 export function AuthorCard({ author }: { author: AuthorWithParsed }) {
   return (
     <Link
-      className="group flex flex-col gap-3 rounded-2xl border border-border/70 p-4 transition hover:-translate-y-0.5 hover:border-foreground/15 hover:shadow-md"
+      className="group flex flex-col gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-muted/30"
       href={`/authors/${author.id}`}
     >
       <div className="flex items-center gap-3">
-        <Avatar className="size-12">
+        <Avatar className="size-10">
           <AvatarImage alt={author.name} src={author.avatar ?? undefined} />
-          <AvatarFallback>{getInitials(author.name)}</AvatarFallback>
+          <AvatarFallback className="text-xs">
+            {getInitials(author.name)}
+          </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-sm">{author.name}</p>
           {author.specialty.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {author.specialty.slice(0, 3).map((s) => (
-                <Badge className="text-[11px]" key={s} variant="secondary">
+                <Badge
+                  className="font-normal text-[11px]"
+                  key={s}
+                  variant="secondary"
+                >
                   {s}
                 </Badge>
               ))}

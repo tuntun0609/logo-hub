@@ -29,14 +29,14 @@ export default async function SitesCategoryPage({
       </div>
 
       <div>
-        <h1 className="font-semibold text-3xl tracking-tight">{category}</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">{category}</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           共 {sites.length} 个网站
         </p>
       </div>
 
       {sites.length === 0 ? (
-        <div className="rounded-3xl border border-dashed p-10 text-center">
+        <div className="py-20 text-center">
           <p className="text-muted-foreground">该分类下暂无网站</p>
           <Link
             className="mt-4 inline-block text-sm underline-offset-4 hover:underline"

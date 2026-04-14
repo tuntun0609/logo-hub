@@ -13,7 +13,7 @@ export function ToolHeader({
   backHref?: string
 }) {
   return (
-    <div className="sticky top-2 z-10 flex items-center gap-2 rounded-lg bg-background/80 py-3 shadow-black/5 backdrop-blur-sm">
+    <div className="sticky top-2 z-10 flex items-center gap-3 rounded-lg border bg-background/90 px-3 py-2.5 backdrop-blur-sm">
       <Link
         className={cn(buttonVariants({ size: 'icon-sm', variant: 'ghost' }))}
         href={backHref}
@@ -21,7 +21,7 @@ export function ToolHeader({
         <ArrowLeftIcon size={16} />
       </Link>
       <div className="min-w-0">
-        <h1 className="truncate font-semibold text-base tracking-tight">
+        <h1 className="truncate font-semibold text-sm tracking-tight">
           {title}
         </h1>
         {description && (
