@@ -1,13 +1,7 @@
-import { ArrowRight, Compass, Search, Wrench } from 'lucide-react'
+import { ArrowRight, Eraser, Palette, Search, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { SiteCard } from '@/components/site-card'
-import { Badge } from '@/components/ui/badge'
-import {
-  authorHighlights,
-  platformIdeas,
-  toolGroups,
-  topicHighlights,
-} from '@/data/platform'
+import { allTools } from '@/data/platform'
 import { getSites } from '@/lib/actions/sites'
 
 const primaryButtonClassName =
@@ -16,45 +10,42 @@ const primaryButtonClassName =
 const outlineButtonClassName =
   'inline-flex h-9 items-center justify-center rounded-2xl border border-border bg-background px-5 text-sm font-medium transition hover:bg-muted hover:text-foreground'
 
-const primaryModules = [
+const heroTools = [
   {
-    title: '工具库',
-    description: '快速进入生成、配色、矢量化、导出等高频工作流。',
-    href: '/tools',
-    icon: Wrench,
+    title: 'Icon Maker',
+    description: '生成 App 图标',
+    href: '/tools/icon-maker',
+    icon: Sparkles,
   },
   {
-    title: '网站导航',
-    description: '收录值得长期回访的 Logo、品牌、字体与灵感网站。',
-    href: '/sites',
-    icon: Compass,
+    title: 'Background Remover',
+    description: 'AI 一键抠图',
+    href: '/tools/background-remover',
+    icon: Eraser,
+  },
+  {
+    title: 'Color Extractor',
+    description: '提取主题配色',
+    href: '/tools/color-extractor',
+    icon: Palette,
   },
 ]
 
-const journeySteps = ['获取灵感', '选择工具', '形成方案', '持续回访']
-
 export default async function HomePage() {
   const [featuredSites] = await Promise.all([getSites()])
-  const featuredTools = toolGroups.flatMap((group) => group.tools).slice(0, 4)
 
   return (
     <div className="space-y-8">
       <section className="overflow-hidden rounded-[2.25rem] border border-border/70 bg-[linear-gradient(135deg,rgba(15,23,42,0.05),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.98))] p-6 sm:p-8 lg:p-10">
         <div className="grid gap-10 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
           <div className="space-y-6">
-            <Badge
-              className="rounded-full px-3 py-1 text-xs"
-              variant="secondary"
-            >
-              P0 主骨架 · 平台首页
-            </Badge>
             <div className="space-y-4">
               <h1 className="max-w-4xl font-semibold text-4xl tracking-tight sm:text-5xl">
-                Logo Hub — 工具 + 网站导航的
-                <span className="text-primary"> 一站式平台</span>
+                Logo Hub — 图片与 Logo 的
+                <span className="text-primary"> 在线工具箱</span>
               </h1>
               <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">
-                提供高频设计工具和精选网站导航，快速找到所需资源并形成工作流。
+                免费在线工具，覆盖图标生成、格式转换、抠图、配色提取等高频场景。
               </p>
             </div>
 
@@ -65,7 +56,7 @@ export default async function HomePage() {
                   className="h-12 w-full rounded-2xl border border-border/70 bg-background/80 pr-4 pl-11 text-sm outline-none transition focus:border-primary"
                   defaultValue=""
                   name="q"
-                  placeholder="搜索工具、网站、方案"
+                  placeholder="搜索工具，例如：SVG、抠图、配色"
                   type="search"
                 />
               </div>
@@ -82,117 +73,27 @@ export default async function HomePage() {
                 浏览网站导航
               </Link>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-4">
-              {journeySteps.map((step, index) => (
-                <div
-                  className="rounded-2xl border border-border/60 bg-background/70 p-4"
-                  key={step}
-                >
-                  <p className="text-muted-foreground text-xs">
-                    Step {index + 1}
-                  </p>
-                  <p className="mt-2 font-medium text-sm">{step}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="grid gap-3 self-start">
-            {[
-              {
-                title: '热门工具',
-                value: '配色提取 / SVG 优化 / 尺寸导出',
-              },
-              {
-                title: '最新收录',
-                value: '首页直接挂出最近新增的导航和工具入口。',
-              },
-              {
-                title: '专题入口',
-                value: '先放专题占位，为后续 P1 内容网络铺路。',
-              },
-            ].map((item) => (
-              <div
-                className="rounded-[1.75rem] border border-border/60 bg-background/80 p-5"
-                key={item.title}
-              >
-                <p className="text-muted-foreground text-xs">{item.title}</p>
-                <p className="mt-2 font-medium text-base">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-2">
-        {primaryModules.map((module) => (
-          <Link
-            className="group rounded-[2rem] border border-border/70 bg-card/80 p-6 transition hover:-translate-y-1 hover:border-foreground/15"
-            href={module.href}
-            key={module.title}
-          >
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-              <module.icon className="size-5" />
-            </div>
-            <h2 className="mt-6 font-semibold text-2xl">{module.title}</h2>
-            <p className="mt-2 text-muted-foreground text-sm leading-6">
-              {module.description}
-            </p>
-            <div className="mt-6 flex items-center gap-2 text-sm">
-              <span>进入模块</span>
-              <ArrowRight className="size-4 transition group-hover:translate-x-1" />
-            </div>
-          </Link>
-        ))}
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <div className="rounded-[2rem] border p-6">
-          <h2 className="font-semibold text-xl">热门工具</h2>
-          <div className="mt-4 space-y-3">
-            {featuredTools.map((tool) => (
+            {heroTools.map((tool) => (
               <Link
-                className="flex items-start justify-between gap-3 rounded-[1.25rem] border border-border/60 p-4 transition hover:border-foreground/15"
+                className="flex items-center gap-4 rounded-[1.75rem] border border-border/60 bg-background/80 p-5 transition hover:border-foreground/15"
                 href={tool.href}
-                key={tool.name}
-                target={tool.isExternal ? '_blank' : undefined}
+                key={tool.title}
               >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary">
+                  <tool.icon className="size-5" />
+                </div>
                 <div>
-                  <p className="font-medium text-sm">{tool.name}</p>
-                  <p className="mt-1 text-muted-foreground text-sm">
+                  <p className="font-medium text-sm">{tool.title}</p>
+                  <p className="mt-0.5 text-muted-foreground text-xs">
                     {tool.description}
                   </p>
                 </div>
-                <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
               </Link>
             ))}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border p-6">
-          <h2 className="font-semibold text-xl">内容网络占位</h2>
-          <div className="mt-4 grid gap-3">
-            {[
-              ...platformIdeas,
-              ...topicHighlights.slice(0, 1),
-              ...authorHighlights.slice(0, 1),
-            ]
-              .slice(0, 4)
-              .map((item) => (
-                <Link
-                  className="rounded-[1.25rem] border border-border/60 p-4 transition hover:border-foreground/15"
-                  href={item.href}
-                  key={'title' in item ? item.title : item.name}
-                >
-                  <p className="font-medium text-sm">
-                    {'title' in item ? item.title : item.name}
-                  </p>
-                  <p className="mt-1 text-muted-foreground text-sm">
-                    {item.description}
-                  </p>
-                </Link>
-              ))}
           </div>
         </div>
       </section>
@@ -200,9 +101,40 @@ export default async function HomePage() {
       <section className="rounded-[2rem] border p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-2xl">导航预览</h2>
+            <h2 className="font-semibold text-2xl">全部工具</h2>
             <p className="mt-1 text-muted-foreground text-sm">
-              网站导航页先补分类浏览、简介说明与外部跳转。
+              共 {allTools.length} 个在线工具
+            </p>
+          </div>
+          <Link
+            className="text-muted-foreground text-sm transition hover:text-foreground"
+            href="/tools"
+          >
+            查看工具库
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {allTools.map((tool) => (
+            <Link
+              className="group rounded-xl border p-4 transition-colors hover:bg-muted/50"
+              href={tool.href}
+              key={tool.name}
+            >
+              <p className="font-medium text-sm">{tool.name}</p>
+              <p className="mt-1 text-muted-foreground text-xs">
+                {tool.description}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-2xl">精选网站导航</h2>
+            <p className="mt-1 text-muted-foreground text-sm">
+              收录值得回访的 Logo、品牌与设计灵感网站
             </p>
           </div>
           <Link

@@ -5,15 +5,17 @@ import {
   ChevronsUpDown,
   CircleHelp,
   Compass,
+  Eraser,
+  FileImage,
   Hexagon,
   Home,
-  Images,
   Loader2,
   LogIn,
   LogOut,
   MessageSquarePlus,
   Monitor,
   Moon,
+  Palette,
   Search,
   Sparkles,
   Sun,
@@ -50,17 +52,23 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
+const toolItems = [
+  { title: '全部工具', url: '/tools', icon: Wrench },
+  { title: 'Icon Maker', url: '/tools/icon-maker', icon: Sparkles },
+  { title: 'ICO Converter', url: '/tools/ico-converter', icon: FileImage },
+  {
+    title: 'Background Remover',
+    url: '/tools/background-remover',
+    icon: Eraser,
+  },
+  { title: 'Color Extractor', url: '/tools/color-extractor', icon: Palette },
+]
+
 const discoverItems = [
   { title: '首页', url: '/', icon: Home },
   { title: '网站导航', url: '/sites', icon: Compass },
-  { title: '统一搜索', url: '/search', icon: Search, badge: 'P0' },
+  { title: '统一搜索', url: '/search', icon: Search },
   { title: '作者专区', url: '/authors', icon: Users },
-  { title: '专题内容', icon: Images, badge: 'Soon' },
-]
-
-const toolItems = [
-  { title: 'Logo 生成', icon: Sparkles, badge: 'Beta' },
-  { title: '工具库', url: '/tools', icon: Wrench },
 ]
 
 function getUserInitials(name?: string | null) {
@@ -87,9 +95,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         return { ...item, isActive: false }
       }
 
-      const isRoot = item.url === '/'
-      const isActive = isRoot
-        ? pathname === '/'
+      const isExact = item.url === '/' || item.url === '/tools'
+      const isActive = isExact
+        ? pathname === item.url
         : pathname === item.url || pathname.startsWith(`${item.url}/`)
 
       return { ...item, isActive }
@@ -209,7 +217,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Logo Hub</span>
                   <span className="truncate text-muted-foreground text-xs">
-                    Tool + Content + Directory
+                    Image & Logo Toolkit
                   </span>
                 </div>
               </SidebarMenuButton>
@@ -221,16 +229,16 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Discover</SidebarGroupLabel>
+          <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenuItems items={withActive(discoverItems)} />
+            <SidebarMenuItems items={withActive(toolItems)} />
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>Discover</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenuItems items={withActive(toolItems)} />
+            <SidebarMenuItems items={withActive(discoverItems)} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

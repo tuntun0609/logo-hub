@@ -1,10 +1,4 @@
-export type SearchItemType =
-  | 'author'
-  | 'idea'
-  | 'logo'
-  | 'site'
-  | 'tool'
-  | 'topic'
+export type SearchItemType = 'author' | 'idea' | 'site' | 'tool' | 'topic'
 
 export interface PlatformTool {
   category: string
@@ -49,14 +43,6 @@ export interface PlatformTopic {
   description: string
   href: string
   title: string
-}
-
-export interface PlatformLogoSpotlight {
-  category: string
-  description: string
-  href: string
-  name: string
-  tags: string[]
 }
 
 export interface UnifiedSearchItem {
@@ -268,30 +254,6 @@ export const topicHighlights: PlatformTopic[] = [
   },
 ]
 
-export const logoSpotlights: PlatformLogoSpotlight[] = [
-  {
-    name: '科技 SaaS 标识库',
-    category: '科技',
-    description: '适合对比无衬线字标、几何图形和蓝绿品牌色趋势。',
-    href: '/logos',
-    tags: ['几何', '字标', 'SaaS'],
-  },
-  {
-    name: '消费品牌标识观察',
-    category: '消费',
-    description: '聚焦包装、亲和力与色彩识别策略。',
-    href: '/logos',
-    tags: ['消费', '包装', '配色'],
-  },
-  {
-    name: '金融与企业品牌案例',
-    category: '金融',
-    description: '优先关注稳定感、可信度与系统化延展。',
-    href: '/logos',
-    tags: ['金融', '企业识别'],
-  },
-]
-
 export const allTools = toolGroups.flatMap((group) =>
   group.tools.map((tool) => ({ ...tool, group: group.label }))
 )
@@ -344,14 +306,5 @@ export function getUnifiedSearchItems(): UnifiedSearchItem[] {
     type: 'topic',
   }))
 
-  const logos = logoSpotlights.map<UnifiedSearchItem>((logo) => ({
-    title: logo.name,
-    description: logo.description,
-    href: logo.href,
-    category: logo.category,
-    tags: logo.tags,
-    type: 'logo',
-  }))
-
-  return [...logos, ...tools, ...sites, ...authors, ...ideas, ...topics]
+  return [...tools, ...sites, ...authors, ...ideas, ...topics]
 }
