@@ -1,5 +1,6 @@
 import { ArrowRight, Eraser, FileImage, Palette, Sparkles } from 'lucide-react'
 import Link from 'next/link'
+import { HeroVisual } from '@/components/hero-visual'
 import { SiteCard } from '@/components/site-card'
 import { allTools } from '@/data/platform'
 import { getSites } from '@/lib/actions/sites'
@@ -30,15 +31,33 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-16">
-      {/* Hero — 简洁大气，单一焦点 */}
-      <section className="pt-4 sm:pt-8 lg:pt-12">
-        <div className="max-w-3xl space-y-4">
+      {/* Hero — 设计师画布 */}
+      <section className="relative overflow-hidden rounded-2xl px-1 pt-10 pb-8 sm:pt-14 sm:pb-10 lg:pt-20 lg:pb-14">
+        <HeroVisual />
+        <div className="relative z-10 max-w-2xl space-y-5">
           <h1 className="font-semibold text-3xl leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl">
-            图片与 Logo 的在线工具箱
+            图片与 Logo 的
+            <br className="sm:hidden" />
+            <span className="relative inline-block">
+              在线工具箱
+              <span className="absolute -bottom-1 left-0 h-[2px] w-full bg-foreground/20" />
+            </span>
           </h1>
-          <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
+          <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
             免费在线工具，覆盖图标生成、格式转换、抠图、配色提取等高频场景。
           </p>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Link
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-2.5 font-medium text-primary-foreground text-sm transition-all hover:bg-primary/80"
+              href="/tools"
+            >
+              探索全部工具
+              <ArrowRight className="size-4" />
+            </Link>
+            <span className="text-muted-foreground/60 text-sm">
+              {allTools.length} 个工具 · 完全免费
+            </span>
+          </div>
         </div>
       </section>
 
