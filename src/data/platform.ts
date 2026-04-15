@@ -1,6 +1,4 @@
-export type SearchItemType = 'author' | 'idea' | 'site' | 'tool' | 'topic'
-
-export interface PlatformTool {
+export type PlatformTool = {
   category: string
   description: string
   href: string
@@ -43,16 +41,6 @@ export interface PlatformTopic {
   description: string
   href: string
   title: string
-}
-
-export interface UnifiedSearchItem {
-  category: string
-  description: string
-  href: string
-  isExternal?: boolean
-  tags: string[]
-  title: string
-  type: SearchItemType
 }
 
 export const toolGroups: PlatformToolGroup[] = [
@@ -257,54 +245,3 @@ export const topicHighlights: PlatformTopic[] = [
 export const allTools = toolGroups.flatMap((group) =>
   group.tools.map((tool) => ({ ...tool, group: group.label }))
 )
-
-export function getUnifiedSearchItems(): UnifiedSearchItem[] {
-  const tools = allTools.map<UnifiedSearchItem>((tool) => ({
-    title: tool.name,
-    description: tool.description,
-    href: tool.href,
-    isExternal: tool.isExternal,
-    category: tool.category,
-    tags: [tool.group, ...(tool.tags ?? [])],
-    type: 'tool',
-  }))
-
-  const sites = curatedSites.map<UnifiedSearchItem>((site) => ({
-    title: site.name,
-    description: site.description,
-    href: site.href,
-    isExternal: true,
-    category: site.category,
-    tags: [...site.tags, site.notes],
-    type: 'site',
-  }))
-
-  const ideas = platformIdeas.map<UnifiedSearchItem>((idea) => ({
-    title: idea.title,
-    description: idea.description,
-    href: idea.href,
-    category: '设计方案',
-    tags: idea.tags,
-    type: 'idea',
-  }))
-
-  const authors = authorHighlights.map<UnifiedSearchItem>((author) => ({
-    title: author.name,
-    description: `${author.specialty} · ${author.description}`,
-    href: author.href,
-    category: '作者',
-    tags: author.tags,
-    type: 'author',
-  }))
-
-  const topics = topicHighlights.map<UnifiedSearchItem>((topic) => ({
-    title: topic.title,
-    description: topic.description,
-    href: topic.href,
-    category: '专题',
-    tags: [],
-    type: 'topic',
-  }))
-
-  return [...tools, ...sites, ...authors, ...ideas, ...topics]
-}

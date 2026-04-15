@@ -16,7 +16,6 @@ import {
   Monitor,
   Moon,
   Palette,
-  Search,
   Sparkles,
   Sun,
   UserCog,
@@ -65,9 +64,7 @@ const toolItems = [
 ]
 
 const discoverItems = [
-  { title: '首页', url: '/', icon: Home },
   { title: '网站导航', url: '/sites', icon: Compass },
-  { title: '统一搜索', url: '/search', icon: Search },
   { title: '作者专区', url: '/authors', icon: Users },
 ]
 
@@ -228,6 +225,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenuItems
+              items={withActive([{ title: '首页', url: '/', icon: Home }])}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>

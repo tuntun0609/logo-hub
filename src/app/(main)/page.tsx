@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  Eraser,
-  FileImage,
-  Palette,
-  Search,
-  Sparkles,
-} from 'lucide-react'
+import { ArrowRight, Eraser, FileImage, Palette, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { SiteCard } from '@/components/site-card'
 import { allTools } from '@/data/platform'
@@ -39,31 +32,13 @@ export default async function HomePage() {
     <div className="space-y-16">
       {/* Hero — 简洁大气，单一焦点 */}
       <section className="pt-4 sm:pt-8 lg:pt-12">
-        <div className="max-w-3xl space-y-6">
+        <div className="max-w-3xl space-y-4">
           <h1 className="font-semibold text-3xl leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl">
             图片与 Logo 的在线工具箱
           </h1>
           <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
             免费在线工具，覆盖图标生成、格式转换、抠图、配色提取等高频场景。
           </p>
-          <form action="/search" className="flex max-w-xl gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                className="h-10 w-full rounded-lg border bg-background pr-4 pl-10 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-foreground/25 focus:ring-1 focus:ring-foreground/10"
-                defaultValue=""
-                name="q"
-                placeholder="搜索工具，例如：SVG、抠图、配色"
-                type="search"
-              />
-            </div>
-            <button
-              className="h-10 shrink-0 rounded-lg bg-foreground px-4 font-medium text-background text-sm transition hover:bg-foreground/90"
-              type="submit"
-            >
-              搜索
-            </button>
-          </form>
         </div>
       </section>
 
