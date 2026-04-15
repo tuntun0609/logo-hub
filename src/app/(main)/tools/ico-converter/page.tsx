@@ -176,157 +176,171 @@ export default function IcoConverterPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <ToolHeader title="ICO Converter" />
+      <ToolHeader
+        description="将图片转换为多尺寸 ICO 图标文件"
+        title="ICO Converter"
+      />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-        {/* Error */}
-        {error && (
-          <div
-            aria-live="polite"
-            className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
-          >
-            {error}
-          </div>
-        )}
+      {/* Error */}
+      {error && (
+        <div
+          aria-live="polite"
+          className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
+        >
+          {error}
+        </div>
+      )}
 
-        {/* Upload zone */}
-        {sourceFile ? (
-          <div className="flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3">
-            <ImageIcon className="size-5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-sm">{sourceFile.name}</p>
-              <p className="text-muted-foreground text-xs">
-                {sourceImage &&
-                  `${sourceImage.naturalWidth} × ${sourceImage.naturalHeight}`}
-                {' · '}
-                {(sourceFile.size / 1024).toFixed(1)} KB
-              </p>
-            </div>
-            <Button
-              aria-label="移除图片"
-              onClick={handleClear}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ) : (
-          <button
-            aria-label="上传图片文件"
-            className={cn(
-              'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 transition-colors',
-              isDragging
-                ? 'border-primary bg-primary/5'
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-            )}
-            onClick={() => fileInputRef.current?.click()}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            type="button"
-          >
-            <Upload className="size-8 text-muted-foreground" />
-            <div className="text-center">
-              <p className="font-medium text-sm">拖拽图片到此处或点击上传</p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                支持 PNG, JPG, SVG, WEBP, GIF（≤10MB）
-              </p>
-            </div>
-          </button>
-        )}
-
-        <input
-          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.png,.jpg,.jpeg,.webp,.gif,.svg"
-          className="hidden"
-          onChange={handleFileInput}
-          ref={fileInputRef}
-          type="file"
-        />
-
-        {/* Size selector */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium text-sm">选择分辨率</h2>
-            <div className="flex gap-1.5">
-              <Button onClick={selectFavicon} size="xs" variant="ghost">
-                常用 Favicon
-              </Button>
-              <Button onClick={selectAll} size="xs" variant="ghost">
-                全选
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {ALL_SIZES.map((size) => (
-              <button
-                aria-label={`${size}×${size} 像素`}
-                aria-pressed={selectedSizes.has(size)}
-                className={cn(
-                  'inline-flex h-8 items-center rounded-lg border px-3 font-medium text-sm transition-colors',
-                  selectedSizes.has(size)
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background hover:bg-muted'
-                )}
-                key={size}
-                onClick={() => toggleSize(size)}
-                type="button"
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Left column: Upload + Size selector */}
+        <div className="flex flex-col gap-6 rounded-xl border bg-muted/20 p-5">
+          {/* Upload zone */}
+          {sourceFile ? (
+            <div className="flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3">
+              <ImageIcon className="size-5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-sm">
+                  {sourceFile.name}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {sourceImage &&
+                    `${sourceImage.naturalWidth} × ${sourceImage.naturalHeight}`}
+                  {' · '}
+                  {(sourceFile.size / 1024).toFixed(1)} KB
+                </p>
+              </div>
+              <Button
+                aria-label="移除图片"
+                onClick={handleClear}
+                size="icon-sm"
+                variant="ghost"
               >
-                {size}
-              </button>
-            ))}
+                <X className="size-4" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              aria-label="上传图片文件"
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 transition-colors',
+                isDragging
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              )}
+              onClick={() => fileInputRef.current?.click()}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              type="button"
+            >
+              <Upload className="size-8 text-muted-foreground" />
+              <div className="text-center">
+                <p className="font-medium text-sm">拖拽图片到此处或点击上传</p>
+                <p className="mt-1 text-muted-foreground text-xs">
+                  支持 PNG, JPG, SVG, WEBP, GIF（≤10MB）
+                </p>
+              </div>
+            </button>
+          )}
+
+          <input
+            accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.png,.jpg,.jpeg,.webp,.gif,.svg"
+            className="hidden"
+            onChange={handleFileInput}
+            ref={fileInputRef}
+            type="file"
+          />
+
+          {/* Size selector */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-medium text-sm">选择分辨率</h2>
+              <div className="flex gap-1.5">
+                <Button onClick={selectFavicon} size="xs" variant="ghost">
+                  常用 Favicon
+                </Button>
+                <Button onClick={selectAll} size="xs" variant="ghost">
+                  全选
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {ALL_SIZES.map((size) => (
+                <button
+                  aria-label={`${size}×${size} 像素`}
+                  aria-pressed={selectedSizes.has(size)}
+                  className={cn(
+                    'inline-flex h-8 items-center rounded-lg border px-3 font-medium text-sm transition-colors',
+                    selectedSizes.has(size)
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-background hover:bg-muted'
+                  )}
+                  key={size}
+                  onClick={() => toggleSize(size)}
+                  type="button"
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Preview grid */}
-        {previews.size > 0 && (
-          <div className="flex flex-col gap-3">
-            <h2 className="font-medium text-sm">预览</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {[...previews.entries()]
-                .sort(([a], [b]) => a - b)
-                .map(([size, dataUrl]) => (
-                  <div
-                    className="flex flex-col items-center gap-2 rounded-lg border bg-muted/20 p-4"
-                    key={size}
-                  >
-                    <div className="flex h-20 items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        alt={`${size}×${size} 预览`}
-                        className="image-rendering-pixelated"
-                        height={Math.min(size, 80)}
-                        src={dataUrl}
-                        style={{
-                          imageRendering: size <= 48 ? 'pixelated' : 'auto',
-                        }}
-                        width={Math.min(size, 80)}
-                      />
-                    </div>
-                    <span className="text-muted-foreground text-xs">
-                      {size} × {size}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
+        {/* Right column: Preview + Download */}
+        <div className="flex flex-col gap-6 rounded-xl border bg-muted/20 p-5">
+          {previews.size > 0 ? (
+            <>
+              <div className="flex flex-col gap-3">
+                <h2 className="font-medium text-sm">预览</h2>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {[...previews.entries()]
+                    .sort(([a], [b]) => a - b)
+                    .map(([size, dataUrl]) => (
+                      <div
+                        className="flex flex-col items-center gap-2 rounded-lg border bg-muted/20 p-4"
+                        key={size}
+                      >
+                        <div className="flex h-20 items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            alt={`${size}×${size} 预览`}
+                            className="image-rendering-pixelated"
+                            height={Math.min(size, 80)}
+                            src={dataUrl}
+                            style={{
+                              imageRendering: size <= 48 ? 'pixelated' : 'auto',
+                            }}
+                            width={Math.min(size, 80)}
+                          />
+                        </div>
+                        <span className="text-muted-foreground text-xs">
+                          {size} × {size}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
 
-        {/* Download */}
-        {sourceImage && (
-          <Button
-            className="w-full sm:w-auto sm:self-start"
-            disabled={selectedSizes.size === 0 || isProcessing}
-            onClick={handleDownload}
-          >
-            {isProcessing ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Download className="size-4" />
-            )}
-            {isProcessing ? '生成中...' : '下载 .ico'}
-          </Button>
-        )}
+              <Button
+                className="w-full"
+                disabled={selectedSizes.size === 0 || isProcessing}
+                onClick={handleDownload}
+              >
+                {isProcessing ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                {isProcessing ? '生成中...' : '下载 .ico'}
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 text-muted-foreground">
+              <ImageIcon className="size-8" />
+              <p className="text-sm">上传图片后预览将显示在这里</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
