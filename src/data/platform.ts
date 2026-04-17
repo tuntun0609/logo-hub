@@ -1,4 +1,4 @@
-export type PlatformTool = {
+export interface PlatformTool {
   category: string
   description: string
   href: string

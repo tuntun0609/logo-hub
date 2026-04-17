@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import type { CuratedSite, SiteCategory } from '@/db/schema'
 import { curatedSites, siteCategories } from '@/db/schema'
@@ -23,12 +23,13 @@ export async function getSites(
     .select()
     .from(curatedSites)
     .where(
-      category
-        ? eq(curatedSites.category, category)
-        : eq(curatedSites.visible, true)
+      and(
+        eq(curatedSites.visible, true),
+        category ? eq(curatedSites.category, category) : undefined
+      )
     )
     .orderBy(asc(curatedSites.order), asc(curatedSites.id))
-  return rows.filter((s) => s.visible).map(parseTags)
+  return rows.map(parseTags)
 }
 
 export function getCategories(): Promise<SiteCategory[]> {
@@ -36,4 +37,14 @@ export function getCategories(): Promise<SiteCategory[]> {
     .select()
     .from(siteCategories)
     .orderBy(asc(siteCategories.order), asc(siteCategories.id))
+}
+
+export async function getCategoryById(
+  id: number
+): Promise<SiteCategory | undefined> {
+  const rows = await db
+    .select()
+    .from(siteCategories)
+    .where(eq(siteCategories.id, id))
+  return rows[0]
 }

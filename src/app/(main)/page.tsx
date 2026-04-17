@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { HeroVisual } from '@/components/hero-visual'
 import { SiteCard } from '@/components/site-card'
 import { allTools } from '@/data/platform'
-import { getSites } from '@/lib/actions/sites'
+import { getCategories, getSites } from '@/lib/actions/sites'
 
 const heroTools = [
   {
@@ -26,8 +26,30 @@ const heroTools = [
   },
 ]
 
+const HOMEPAGE_CATEGORIES = 2
+const HOMEPAGE_SITES_PER_CATEGORY = 3
+
 export default async function HomePage() {
-  const [featuredSites] = await Promise.all([getSites()])
+  const [categories, allSites] = await Promise.all([
+    getCategories(),
+    getSites(),
+  ])
+
+  // Group sites by category for the featured section
+  const sitesByCategory = new Map<string, typeof allSites>()
+  for (const site of allSites) {
+    const list = sitesByCategory.get(site.category)
+    if (list) {
+      list.push(site)
+    } else {
+      sitesByCategory.set(site.category, [site])
+    }
+  }
+
+  // Pick first N categories that have sites
+  const featuredCategories = categories
+    .filter((cat) => (sitesByCategory.get(cat.name)?.length ?? 0) > 0)
+    .slice(0, HOMEPAGE_CATEGORIES)
 
   return (
     <div className="space-y-16">
@@ -129,7 +151,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 精选网站 — 无外框，直接展示 */}
+      {/* 精选网站 — 按分类分组预览 */}
       <section className="space-y-6">
         <div className="flex items-baseline justify-between">
           <div>
@@ -146,14 +168,39 @@ export default async function HomePage() {
             <ArrowRight className="size-3.5" />
           </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {featuredSites.slice(0, 4).map((site, index) => (
-            <SiteCard
-              imageLoading={index === 0 ? 'eager' : undefined}
-              key={site.id}
-              site={site}
-            />
-          ))}
+
+        <div className="space-y-10">
+          {featuredCategories.map((cat) => {
+            const sites = (sitesByCategory.get(cat.name) ?? []).slice(
+              0,
+              HOMEPAGE_SITES_PER_CATEGORY
+            )
+            return (
+              <div className="space-y-4" key={cat.id}>
+                <div className="flex items-baseline justify-between">
+                  <h3 className="font-medium text-muted-foreground text-sm">
+                    {cat.name}
+                  </h3>
+                  <Link
+                    className="flex items-center gap-1 text-muted-foreground/70 text-xs transition hover:text-foreground"
+                    href={`/sites/${cat.id}`}
+                  >
+                    更多
+                    <ArrowRight className="size-3" />
+                  </Link>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {sites.map((site, index) => (
+                    <SiteCard
+                      imageLoading={index === 0 ? 'eager' : undefined}
+                      key={site.id}
+                      site={site}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
     </div>
