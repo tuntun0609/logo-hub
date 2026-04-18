@@ -47,3 +47,7 @@ next-env.d.ts
 .tmp-browser
 
 certificates
+
+# playwright browsers
+/.playwright-browsers
+/playwright-browsers

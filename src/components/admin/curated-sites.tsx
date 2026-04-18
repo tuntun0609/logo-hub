@@ -2,11 +2,13 @@
 
 import { useUploadFiles } from '@better-upload/client'
 import {
+  Camera,
   ChevronLeft,
   ChevronRight,
   Eye,
   EyeOff,
   ImageIcon,
+  Link as LinkIcon,
   Loader2,
   Pencil,
   Plus,
@@ -21,7 +23,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -41,6 +42,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { curatedSites as staticSites } from '@/data/platform'
 import type { SiteCategory } from '@/db/schema'
+import { captureScreenshot } from '@/lib/actions/admin/screenshot'
 import {
   createSite,
   deleteSite,
@@ -111,6 +113,12 @@ function SiteFormDialog({
 }: SiteFormDialogProps) {
   const [form, setForm] = useState<SiteFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [imageInputMode, setImageInputMode] = useState<
+    'upload' | 'url' | 'screenshot'
+  >('upload')
+  const [screenshotUrl, setScreenshotUrl] = useState('')
+  const [directImageUrl, setDirectImageUrl] = useState('')
+  const [capturingScreenshot, setCapturingScreenshot] = useState(false)
 
   const { control: uploadControl } = useUploadFiles({
     route: 'logos',
@@ -133,6 +141,9 @@ function SiteFormDialog({
   useEffect(() => {
     if (open) {
       setForm(editing ? siteToForm(editing) : emptyForm)
+      setImageInputMode('upload')
+      setScreenshotUrl('')
+      setDirectImageUrl('')
     }
   }, [open, editing])
 
@@ -140,6 +151,44 @@ function SiteFormDialog({
     if (!nextOpen) {
       onClose()
     }
+  }
+
+  const handleCaptureScreenshot = async () => {
+    if (!screenshotUrl.trim()) {
+      toast.error('请输入网址')
+      return
+    }
+
+    setCapturingScreenshot(true)
+    try {
+      const result = await captureScreenshot(screenshotUrl, {
+        fullPage: false,
+        width: 1920,
+        height: 1080,
+        devicePixelRatio: 2,
+        uploadToR2: true,
+      })
+
+      if (result.success && result.url) {
+        setForm((prev) => ({ ...prev, image: result.url! }))
+        toast.success('截图已生成')
+      } else {
+        toast.error(result.error || '截图失败')
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '截图失败')
+    } finally {
+      setCapturingScreenshot(false)
+    }
+  }
+
+  const handleSetDirectUrl = () => {
+    if (!directImageUrl.trim()) {
+      toast.error('请输入图片链接')
+      return
+    }
+    setForm((prev) => ({ ...prev, image: directImageUrl.trim() }))
+    toast.success('图片链接已设置')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -266,27 +315,118 @@ function SiteFormDialog({
                 </Button>
               </div>
             ) : (
-              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-6 transition hover:bg-muted/50">
-                <ImageIcon className="size-6 text-muted-foreground" />
-                <span className="text-muted-foreground text-xs">
-                  {uploadControl.isPending
-                    ? '上传中...'
-                    : '点击上传网站截图（16:10 推荐）'}
-                </span>
-                <input
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploadControl.isPending}
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files ?? [])
-                    if (files.length > 0) {
-                      uploadControl.upload(files)
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    onClick={() => setImageInputMode('upload')}
+                    size="sm"
+                    type="button"
+                    variant={
+                      imageInputMode === 'upload' ? 'default' : 'outline'
                     }
-                    e.target.value = ''
-                  }}
-                  type="file"
-                />
-              </label>
+                  >
+                    <Upload className="mr-2 size-4" />
+                    上传
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => setImageInputMode('url')}
+                    size="sm"
+                    type="button"
+                    variant={imageInputMode === 'url' ? 'default' : 'outline'}
+                  >
+                    <LinkIcon className="mr-2 size-4" />
+                    图片链接
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => setImageInputMode('screenshot')}
+                    size="sm"
+                    type="button"
+                    variant={
+                      imageInputMode === 'screenshot' ? 'default' : 'outline'
+                    }
+                  >
+                    <Camera className="mr-2 size-4" />
+                    网页截图
+                  </Button>
+                </div>
+
+                {imageInputMode === 'upload' && (
+                  <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-6 transition hover:bg-muted/50">
+                    <ImageIcon className="size-6 text-muted-foreground" />
+                    <span className="text-muted-foreground text-xs">
+                      {uploadControl.isPending
+                        ? '上传中...'
+                        : '点击上传网站截图（16:10 推荐）'}
+                    </span>
+                    <input
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadControl.isPending}
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files ?? [])
+                        if (files.length > 0) {
+                          uploadControl.upload(files)
+                        }
+                        e.target.value = ''
+                      }}
+                      type="file"
+                    />
+                  </label>
+                )}
+
+                {imageInputMode === 'url' && (
+                  <div className="space-y-2">
+                    <Input
+                      onChange={(e) => setDirectImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.png"
+                      type="url"
+                      value={directImageUrl}
+                    />
+                    <Button
+                      className="w-full"
+                      disabled={!directImageUrl.trim()}
+                      onClick={handleSetDirectUrl}
+                      size="sm"
+                      type="button"
+                    >
+                      设置图片
+                    </Button>
+                  </div>
+                )}
+
+                {imageInputMode === 'screenshot' && (
+                  <div className="space-y-2">
+                    <Input
+                      onChange={(e) => setScreenshotUrl(e.target.value)}
+                      placeholder="https://example.com"
+                      type="url"
+                      value={screenshotUrl}
+                    />
+                    <Button
+                      className="w-full"
+                      disabled={capturingScreenshot || !screenshotUrl.trim()}
+                      onClick={handleCaptureScreenshot}
+                      size="sm"
+                      type="button"
+                    >
+                      {capturingScreenshot ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          截图中...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="mr-2 size-4" />
+                          生成截图
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <div className="grid gap-2">
@@ -300,7 +440,7 @@ function SiteFormDialog({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
+                  <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
                 ))}
@@ -308,21 +448,22 @@ function SiteFormDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="notes">推荐语</Label>
-            <Input
-              id="notes"
-              onChange={(e) => setField('notes', e.target.value)}
-              placeholder="一句话推荐语，例如: 适合快速建立行业对比基线。"
-              value={form.notes}
-            />
-          </div>
-          <div className="grid gap-2">
             <Label htmlFor="tags">标签</Label>
             <Input
               id="tags"
               onChange={(e) => setField('tags', e.target.value)}
-              placeholder="用逗号分隔，例如: 趋势, 案例库"
+              placeholder="用逗号分隔，例如: 设计, 灵感, 作品集"
               value={form.tags}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="notes">备注</Label>
+            <Textarea
+              id="notes"
+              onChange={(e) => setField('notes', e.target.value)}
+              placeholder="内部备注（不会显示给用户）"
+              rows={2}
+              value={form.notes}
             />
           </div>
           <div className="grid gap-2">
@@ -339,16 +480,21 @@ function SiteFormDialog({
             <Switch
               checked={form.visible}
               id="visible"
-              onCheckedChange={(checked) =>
-                setField('visible', checked as boolean)
-              }
+              onCheckedChange={(checked) => setField('visible', checked)}
             />
-            <Label htmlFor="visible">公开可见</Label>
+            <Label className="cursor-pointer" htmlFor="visible">
+              显示在前台
+            </Label>
           </div>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
+            <Button
+              disabled={saving}
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
               取消
-            </DialogClose>
+            </Button>
             <Button disabled={saving} type="submit">
               {submitLabel}
             </Button>
@@ -359,574 +505,401 @@ function SiteFormDialog({
   )
 }
 
-interface DeleteConfirmDialogProps {
-  onClose: () => void
-  open: boolean
-  site: CuratedSiteWithTags | null
-}
-
-function DeleteConfirmDialog({
-  open,
-  onClose,
-  site,
-}: DeleteConfirmDialogProps) {
-  const [deleting, setDeleting] = useState(false)
-
-  const handleDelete = async () => {
-    if (!site) {
-      return
-    }
-    setDeleting(true)
-    try {
-      await deleteSite(site.id)
-      toast.success(`已删除 "${site.name}"`)
-      onClose()
-    } catch {
-      toast.error('删除失败')
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  return (
-    <Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-      <DialogContent className="sm:max-w-md" showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>确认删除</DialogTitle>
-          <DialogDescription>
-            确定要删除 &ldquo;{site?.name}&rdquo; 吗？此操作不可撤销。
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>取消</DialogClose>
-          <Button
-            disabled={deleting}
-            onClick={handleDelete}
-            variant="destructive"
-          >
-            {deleting ? '删除中...' : '确认删除'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-interface JsonSiteInput {
-  category: string
-  description: string
-  href: string
-  name: string
-  notes?: string
-  tags?: string[]
-}
-
-interface JsonImportDialogProps {
-  onClose: () => void
-  open: boolean
-}
-
-const JSON_EXAMPLE = `[
-  {
-    "name": "网站名称",
-    "href": "https://example.com",
-    "description": "一两句话介绍这个网站",
-    "category": "分类名称",
-    "notes": "推荐语（可选）",
-    "tags": ["标签1", "标签2"]
-  }
-]`
-
-function parseJsonSites(
-  jsonText: string
-): { error: string } | { sites: JsonSiteInput[] } {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(jsonText)
-  } catch {
-    return { error: 'JSON 格式不正确，请检查语法' }
-  }
-  if (!Array.isArray(parsed)) {
-    return { error: 'JSON 必须是一个数组 [ ... ]' }
-  }
-  if (parsed.length === 0) {
-    return { error: '数组为空，没有可导入的数据' }
-  }
-  const sites: JsonSiteInput[] = []
-  for (let i = 0; i < parsed.length; i++) {
-    const item = parsed[i] as Record<string, unknown>
-    if (
-      typeof item.name !== 'string' ||
-      typeof item.href !== 'string' ||
-      typeof item.description !== 'string' ||
-      typeof item.category !== 'string'
-    ) {
-      return {
-        error: `第 ${i + 1} 条数据缺少必填字段（name、href、description、category）`,
-      }
-    }
-    sites.push({
-      name: item.name,
-      href: item.href,
-      description: item.description,
-      category: item.category,
-      notes: typeof item.notes === 'string' ? item.notes : undefined,
-      tags: Array.isArray(item.tags)
-        ? (item.tags as unknown[])
-            .filter((t) => typeof t === 'string')
-            .map(String)
-        : undefined,
-    })
-  }
-  return { sites }
-}
-
-function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
-  const [jsonText, setJsonText] = useState('')
-  const [error, setError] = useState('')
-  const [importing, setImporting] = useState(false)
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      onClose()
-      setJsonText('')
-      setError('')
-    }
-  }
-
-  const handleImport = async () => {
-    setError('')
-    const result = parseJsonSites(jsonText)
-    if ('error' in result) {
-      setError(result.error)
-      return
-    }
-    setImporting(true)
-    try {
-      const { inserted, skipped } = await seedSites(result.sites)
-      if (inserted > 0) {
-        toast.success(`已成功导入 ${inserted} 个站点`)
-      }
-      if (skipped.length > 0) {
-        toast.warning(
-          `已跳过 ${skipped.length} 个重复站点：${skipped.slice(0, 3).join('、')}${skipped.length > 3 ? ' 等' : ''}`
-        )
-      }
-      if (inserted === 0) {
-        setError('所有站点均已存在，无新内容导入')
-        return
-      }
-      onClose()
-      setJsonText('')
-    } catch {
-      setError('导入失败，请重试')
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  return (
-    <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>批量导入 JSON</DialogTitle>
-          <DialogDescription>
-            粘贴 JSON 数组，每条需包含 name、href、description、category
-            四个必填字段
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label>JSON 数据</Label>
-            <Textarea
-              className="font-mono text-xs"
-              onChange={(e) => {
-                setJsonText(e.target.value)
-                setError('')
-              }}
-              placeholder={JSON_EXAMPLE}
-              rows={12}
-              value={jsonText}
-            />
-            {error && <p className="text-destructive text-xs">{error}</p>}
-          </div>
-          <details className="text-xs">
-            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-              查看格式示例
-            </summary>
-            <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 text-muted-foreground">
-              {JSON_EXAMPLE}
-            </pre>
-          </details>
-        </div>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>取消</DialogClose>
-          <Button
-            disabled={importing || !jsonText.trim()}
-            onClick={handleImport}
-          >
-            {importing ? '导入中...' : '开始导入'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-interface SiteListItemProps {
-  onDelete: (site: CuratedSiteWithTags) => void
-  onEdit: (site: CuratedSiteWithTags) => void
-  onToggleVisibility: (site: CuratedSiteWithTags) => void
-  site: CuratedSiteWithTags
-}
-
-function SiteListItem({
-  site,
-  onEdit,
-  onDelete,
-  onToggleVisibility,
-}: SiteListItemProps) {
-  return (
-    <li className="grid gap-3 px-4 py-4 transition-colors hover:bg-muted/30 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,0.8fr)_auto] sm:items-center">
-      <div className="min-w-0 space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate font-medium text-sm sm:text-base">
-            {site.name}
-          </h3>
-          <Badge variant={site.visible ? 'secondary' : 'outline'}>
-            {site.visible ? '已公开' : '已隐藏'}
-          </Badge>
-        </div>
-        <p className="line-clamp-2 text-muted-foreground text-xs sm:text-sm">
-          {site.description}
-        </p>
-        <p className="truncate text-muted-foreground text-xs">{site.href}</p>
-      </div>
-
-      <div className="hidden min-w-0 space-y-1.5 sm:block">
-        <Badge variant="outline">{site.category || '未分类'}</Badge>
-        {site.tags && site.tags.length > 0 && (
-          <p className="text-muted-foreground text-xs">
-            标签 {site.tags.length} 个
-          </p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-1 border-t pt-3 sm:justify-end sm:border-t-0 sm:pt-0">
-        <Button onClick={() => onEdit(site)} size="icon-xs" variant="ghost">
-          <Pencil />
-        </Button>
-        <Button
-          onClick={() => onToggleVisibility(site)}
-          size="icon-xs"
-          variant="ghost"
-        >
-          {site.visible ? <Eye /> : <EyeOff />}
-        </Button>
-        <Button
-          className="ml-auto"
-          onClick={() => onDelete(site)}
-          size="icon-xs"
-          variant="ghost"
-        >
-          <Trash2 className="text-destructive" />
-        </Button>
-      </div>
-    </li>
-  )
-}
-
-const PAGE_SIZE = 20
-
-interface AdminSitesContentProps {
-  categories: SiteCategory[]
-}
-
-export function AdminSitesContent({ categories }: AdminSitesContentProps) {
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<CuratedSiteWithTags | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<CuratedSiteWithTags | null>(
-    null
-  )
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [visibilityFilter, setVisibilityFilter] = useState<
-    '' | 'hidden' | 'visible'
-  >('')
-  const [currentPage, setCurrentPage] = useState(0)
-  const [seeding, setSeeding] = useState(false)
-  const [jsonImportOpen, setJsonImportOpen] = useState(false)
-
-  const [data, setData] = useState<SearchSitesResult>({
+export function CuratedSitesManager() {
+  const [sites, setSites] = useState<SearchSitesResult>({
     sites: [],
     total: 0,
     totalPages: 0,
   })
+  const [categories, setCategories] = useState<SiteCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [visibilityFilter, setVisibilityFilter] = useState<
+    'all' | 'visible' | 'hidden'
+  >('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingSite, setEditingSite] = useState<CuratedSiteWithTags | null>(
+    null
+  )
+  const [confirmDialog, setConfirmDialog] = useState<{
+    message: string
+    onConfirm: () => void
+    open: boolean
+    title: string
+  }>({ message: '', onConfirm: () => undefined, open: false, title: '' })
   const [isPending, startTransition] = useTransition()
 
-  const categoryNames = categories.map((c) => c.name)
-
-  const fetchSites = useCallback(
-    (page: number, s: string, cat: string, vis: '' | 'hidden' | 'visible') => {
+  const loadData = useCallback(
+    (page = 1) => {
+      setLoading(true)
       startTransition(async () => {
-        const result = await searchSites({
-          search: s || undefined,
-          category: cat || undefined,
-          visibility: vis || undefined,
-          page,
-          pageSize: PAGE_SIZE,
-        })
-        setData(result)
+        try {
+          let visibility: '' | 'visible' | 'hidden' | undefined
+          if (visibilityFilter === 'all') {
+            visibility = undefined
+          } else if (visibilityFilter === 'visible') {
+            visibility = 'visible'
+          } else {
+            visibility = 'hidden'
+          }
+
+          const result = await searchSites({
+            search: searchQuery,
+            category: categoryFilter || undefined,
+            visibility,
+            page,
+            pageSize: 20,
+          })
+          setSites(result)
+          setCurrentPage(page)
+        } catch {
+          toast.error('加载失败')
+        } finally {
+          setLoading(false)
+        }
       })
     },
-    []
+    [searchQuery, categoryFilter, visibilityFilter]
   )
 
-  // Initial load + refetch on filter/page changes
   useEffect(() => {
-    fetchSites(currentPage, search, categoryFilter, visibilityFilter)
-  }, [currentPage, search, categoryFilter, visibilityFilter, fetchSites])
+    loadData(1)
+  }, [loadData])
 
-  // Reset page when filters change
-  const handleSearchChange = (value: string) => {
-    setSearch(value)
-    setCurrentPage(0)
-  }
-  const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value)
-    setCurrentPage(0)
-  }
-  const handleVisibilityChange = (value: string) => {
-    setVisibilityFilter(value as '' | 'hidden' | 'visible')
-    setCurrentPage(0)
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const { getAllCategories } = await import(
+          '@/lib/actions/admin/categories'
+        )
+        const cats = await getAllCategories()
+        setCategories(cats)
+      } catch {
+        // Ignore error
+      }
+    }
+    loadCategories()
+  }, [])
+
+  const handleSeedData = () => {
+    setConfirmDialog({
+      message: `确定要导入 ${staticSites.length} 个静态站点数据吗？\n\n注意：已存在的站点名称会被跳过。`,
+      onConfirm: async () => {
+        try {
+          const result = await seedSites(staticSites)
+          toast.success(
+            `成功导入 ${result.inserted} 个站点，跳过 ${result.skipped.length} 个重复站点`
+          )
+          loadData(1)
+        } catch {
+          toast.error('导入失败')
+        }
+      },
+      open: true,
+      title: '确认导入数据',
+    })
   }
 
-  const reload = () => {
-    fetchSites(currentPage, search, categoryFilter, visibilityFilter)
-  }
-
-  const handleEdit = (site: CuratedSiteWithTags) => {
-    setEditing(site)
-    setFormOpen(true)
-  }
-
-  const handleCreate = () => {
-    setEditing(null)
-    setFormOpen(true)
+  const handleDelete = (site: CuratedSiteWithTags) => {
+    setConfirmDialog({
+      message: `确定要删除 "${site.name}" 吗？`,
+      onConfirm: async () => {
+        try {
+          await deleteSite(site.id)
+          toast.success('已删除')
+          loadData(currentPage)
+        } catch {
+          toast.error('删除失败')
+        }
+      },
+      open: true,
+      title: '确认删除',
+    })
   }
 
   const handleToggleVisibility = async (site: CuratedSiteWithTags) => {
     try {
       await toggleSiteVisibility(site.id, site.visible)
-      toast.success(`已${site.visible ? '隐藏' : '显示'} "${site.name}"`)
-      reload()
+      toast.success(site.visible ? '已隐藏' : '已显示')
+      loadData(currentPage)
     } catch {
       toast.error('操作失败')
     }
   }
 
-  const handleSeed = async () => {
-    setSeeding(true)
-    try {
-      const { inserted, skipped } = await seedSites(
-        staticSites.map((s) => ({
-          name: s.name,
-          description: s.description,
-          href: s.href,
-          category: s.category,
-          notes: s.notes || undefined,
-          tags: s.tags.length > 0 ? s.tags : undefined,
-        }))
-      )
-      if (inserted > 0) {
-        toast.success(`已导入 ${inserted} 个预置站点`)
-        reload()
-      }
-      if (skipped.length > 0) {
-        toast.warning(`已跳过 ${skipped.length} 个重复站点`)
-      }
-      if (inserted === 0) {
-        toast.info('所有预置站点均已存在')
-      }
-    } catch {
-      toast.error('导入失败')
-    } finally {
-      setSeeding(false)
-    }
+  const handleEdit = (site: CuratedSiteWithTags) => {
+    setEditingSite(site)
+    setDialogOpen(true)
   }
 
-  const { sites: pageItems, total, totalPages } = data
-  const hasFilters = !!(search || categoryFilter || visibilityFilter)
-  const canGoPrev = currentPage > 0
-  const canGoNext = currentPage < totalPages - 1
+  const handleCreate = () => {
+    setEditingSite(null)
+    setDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false)
+    setEditingSite(null)
+    loadData(currentPage)
+  }
+
+  const totalPages = sites.totalPages
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-bold text-2xl">推荐网站管理</h1>
           <p className="mt-1 text-muted-foreground text-sm">
-            管理所有推荐网站资源 · 共 {total} 个
+            管理首页展示的推荐网站
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setJsonImportOpen(true)} variant="outline">
-            <Upload className="mr-1.5 size-4" />
-            批量导入
+        <div className="flex gap-2">
+          <Button onClick={handleSeedData} size="sm" variant="outline">
+            <Upload className="mr-2 size-4" />
+            导入静态数据
           </Button>
-          <Button onClick={handleCreate}>
-            <Plus className="mr-1.5 size-4" />
+          <Button onClick={handleCreate} size="sm">
+            <Plus className="mr-2 size-4" />
             新增网站
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex flex-wrap gap-3">
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pl-8"
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="搜索站点名称..."
-            value={search}
+            className="pl-9"
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索网站名称、链接或描述..."
+            value={searchQuery}
           />
         </div>
         <Select
-          onValueChange={(value) => handleCategoryChange(value as string)}
+          onValueChange={(value) => setCategoryFilter(value ?? '')}
           value={categoryFilter}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="所有分类" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">所有分类</SelectItem>
-            {categoryNames.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select
-          onValueChange={(value) => handleVisibilityChange(value as string)}
+          onValueChange={(value) =>
+            setVisibilityFilter(value as 'all' | 'visible' | 'hidden')
+          }
           value={visibilityFilter}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="所有状态" />
+          <SelectTrigger className="w-[140px]">
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">所有状态</SelectItem>
-            <SelectItem value="visible">已公开</SelectItem>
+            <SelectItem value="all">全部</SelectItem>
+            <SelectItem value="visible">已显示</SelectItem>
             <SelectItem value="hidden">已隐藏</SelectItem>
           </SelectContent>
         </Select>
-        {isPending && (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        )}
       </div>
 
-      {/* List */}
-      {pageItems.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border bg-background">
-          <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(0,0.8fr)_auto] gap-3 border-b bg-muted/30 px-4 py-3 text-muted-foreground text-xs uppercase tracking-[0.12em] sm:grid">
-            <span>站点信息</span>
-            <span>分类与标签</span>
-            <span className="text-right">操作</span>
-          </div>
-          <ul className="divide-y">
-            {pageItems.map((site) => (
-              <SiteListItem
-                key={site.id}
-                onDelete={setDeleteTarget}
-                onEdit={handleEdit}
-                onToggleVisibility={handleToggleVisibility}
-                site={site}
-              />
-            ))}
-          </ul>
+      {loading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
-          <p className="text-muted-foreground">
-            {hasFilters ? '没有找到匹配的站点' : '还没有添加任何推荐网站'}
-          </p>
-          {!hasFilters && (
-            <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row">
-              <Button onClick={handleCreate} variant="outline">
-                <Plus className="mr-1.5 size-4" />
-                添加第一个网站
-              </Button>
-              <Button
-                disabled={seeding}
-                onClick={handleSeed}
-                variant="secondary"
-              >
-                {seeding
-                  ? '导入中...'
-                  : `导入预置数据（${staticSites.length} 个站点）`}
-              </Button>
+      )}
+
+      {!loading && sites.sites.length === 0 && (
+        <div className="rounded-lg border border-dashed py-12 text-center">
+          <p className="text-muted-foreground">暂无数据</p>
+        </div>
+      )}
+
+      {!loading && sites.sites.length > 0 && (
+        <>
+          <div className="rounded-lg border">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-sm">
+                      网站
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-sm">
+                      分类
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-sm">
+                      标签
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-sm">
+                      排序
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-sm">
+                      状态
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium text-sm">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {sites.sites.map((site) => (
+                    <tr className="hover:bg-muted/50" key={site.id}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {site.image && (
+                            <img
+                              alt=""
+                              className="size-12 rounded border object-cover"
+                              height={48}
+                              src={site.image}
+                              width={48}
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium">{site.name}</div>
+                            <div className="truncate text-muted-foreground text-xs">
+                              {site.href}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary">{site.category}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {site.tags?.slice(0, 2).map((tag) => (
+                            <Badge key={tag} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {site.tags && site.tags.length > 2 && (
+                            <Badge variant="outline">
+                              +{site.tags.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-sm">
+                        {site.order ?? '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={site.visible ? 'default' : 'secondary'}>
+                          {site.visible ? '显示' : '隐藏'}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            onClick={() => handleToggleVisibility(site)}
+                            size="icon-sm"
+                            variant="ghost"
+                          >
+                            {site.visible ? (
+                              <EyeOff className="size-4" />
+                            ) : (
+                              <Eye className="size-4" />
+                            )}
+                          </Button>
+                          <Button
+                            onClick={() => handleEdit(site)}
+                            size="icon-sm"
+                            variant="ghost"
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(site)}
+                            size="icon-sm"
+                            variant="ghost"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground text-sm">
+                共 {sites.total} 条，第 {currentPage} / {totalPages} 页
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  disabled={currentPage === 1 || isPending}
+                  onClick={() => loadData(currentPage - 1)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <Button
+                  disabled={currentPage === totalPages || isPending}
+                  onClick={() => loadData(currentPage + 1)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-muted-foreground text-sm">
-            第 {currentPage + 1} 页 / {totalPages} 页
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              disabled={!canGoPrev}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              size="sm"
-              variant="outline"
-            >
-              <ChevronLeft className="mr-1 size-4" />
-              上一页
-            </Button>
-            <Button
-              disabled={!canGoNext}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              size="sm"
-              variant="outline"
-            >
-              下一页
-              <ChevronRight className="ml-1 size-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Dialogs */}
       <SiteFormDialog
         categories={categories}
-        editing={editing}
-        onClose={() => {
-          setFormOpen(false)
-          setEditing(null)
-          reload()
-        }}
-        open={formOpen}
+        editing={editingSite}
+        onClose={handleCloseDialog}
+        open={dialogOpen}
       />
-      <DeleteConfirmDialog
-        onClose={() => {
-          setDeleteTarget(null)
-          reload()
-        }}
-        open={!!deleteTarget}
-        site={deleteTarget}
-      />
-      <JsonImportDialog
-        onClose={() => {
-          setJsonImportOpen(false)
-          reload()
-        }}
-        open={jsonImportOpen}
-      />
+
+      <Dialog
+        onOpenChange={(open) => setConfirmDialog((prev) => ({ ...prev, open }))}
+        open={confirmDialog.open}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.title}</DialogTitle>
+            <DialogDescription className="whitespace-pre-line">
+              {confirmDialog.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() =>
+                setConfirmDialog((prev) => ({ ...prev, open: false }))
+              }
+              variant="outline"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmDialog((prev) => ({ ...prev, open: false }))
+                confirmDialog.onConfirm()
+              }}
+              variant="destructive"
+            >
+              确认
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

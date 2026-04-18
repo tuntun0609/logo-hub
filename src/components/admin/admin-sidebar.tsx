@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Camera,
   FolderTree,
   Globe,
   LayoutDashboard,
@@ -18,6 +19,7 @@ const navItems = [
   { label: '网站分类', href: '/admin/categories', icon: FolderTree },
   { label: '作者管理', href: '/admin/authors', icon: Users },
   { label: '文件上传', href: '/admin/upload', icon: Upload },
+  { label: '网页截图', href: '/admin/screenshot', icon: Camera },
   { label: '工具管理', href: '/admin/tools', icon: Wrench },
   { label: '系统设置', href: '/admin/settings', icon: Settings },
 ]
