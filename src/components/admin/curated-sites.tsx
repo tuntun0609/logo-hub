@@ -106,21 +106,61 @@ function siteToForm(site: CuratedSiteWithTags): SiteFormData {
   }
 }
 
-interface SiteFormDialogProps {
-  categories: SiteCategory[]
-  editing: CuratedSiteWithTags | null
-  onClose: (saved?: boolean) => void
-  open: boolean
+function usePasteUpload(
+  active: boolean,
+  upload: (files: File[]) => Promise<unknown>
+) {
+  const [isPasting, setIsPasting] = useState(false)
+
+  useEffect(() => {
+    if (!active) {
+      setIsPasting(false)
+      return
+    }
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) {
+        return
+      }
+
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault()
+          const file = item.getAsFile()
+          if (file) {
+            setIsPasting(true)
+            try {
+              await upload([file])
+            } finally {
+              setIsPasting(false)
+            }
+          }
+          break
+        }
+      }
+    }
+
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [active, upload])
+
+  return isPasting
 }
 
-function SiteFormDialog({
+interface SiteImageInputProps {
+  image: string
+  onImageChange: (url: string) => void
+  open: boolean
+  siteUrl: string
+}
+
+function SiteImageInput({
+  image,
+  onImageChange,
   open,
-  onClose,
-  editing,
-  categories,
-}: SiteFormDialogProps) {
-  const [form, setForm] = useState<SiteFormData>(emptyForm)
-  const [saving, setSaving] = useState(false)
+  siteUrl,
+}: SiteImageInputProps) {
   const [imageInputMode, setImageInputMode] = useState<
     'upload' | 'url' | 'screenshot'
   >('upload')
@@ -128,8 +168,6 @@ function SiteFormDialog({
   const [directImageUrl, setDirectImageUrl] = useState('')
 
   const captureScreenshotMutation = useCaptureScreenshot()
-  const createSiteMutation = useCreateSite()
-  const updateSiteMutation = useUpdateSite()
 
   const { control: uploadControl } = useUploadFiles({
     route: 'logos',
@@ -140,7 +178,7 @@ function SiteFormDialog({
           : stripTrailingSlash(R2_PUBLIC_URL)
       if (uploaded.length > 0) {
         const url = `${base}/${uploaded[0].objectInfo.key}`
-        setForm((prev) => ({ ...prev, image: url }))
+        onImageChange(url)
         toast.success('截图已上传')
       }
     },
@@ -149,20 +187,18 @@ function SiteFormDialog({
     },
   })
 
+  const isPasting = usePasteUpload(
+    open && imageInputMode === 'upload',
+    uploadControl.upload
+  )
+
   useEffect(() => {
     if (open) {
-      setForm(editing ? siteToForm(editing) : emptyForm)
       setImageInputMode('upload')
       setScreenshotUrl('')
       setDirectImageUrl('')
     }
-  }, [open, editing])
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      onClose()
-    }
-  }
+  }, [open])
 
   const handleCaptureScreenshot = async () => {
     if (!screenshotUrl.trim()) {
@@ -183,7 +219,7 @@ function SiteFormDialog({
       })
 
       if (result.success && result.url) {
-        setForm((prev) => ({ ...prev, image: result.url ?? '' }))
+        onImageChange(result.url ?? '')
         toast.success('截图已生成')
       } else {
         toast.error(result.error || '截图失败')
@@ -198,8 +234,187 @@ function SiteFormDialog({
       toast.error('请输入图片链接')
       return
     }
-    setForm((prev) => ({ ...prev, image: directImageUrl.trim() }))
+    onImageChange(directImageUrl.trim())
     toast.success('图片链接已设置')
+  }
+
+  return (
+    <Card className="sm:col-span-2" size="sm">
+      <CardHeader className="border-b">
+        <CardTitle>网站截图</CardTitle>
+        <CardDescription>上传、输入链接或自动截图</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {image ? (
+          <div className="relative">
+            <img
+              alt="网站截图"
+              className="w-full rounded-lg border object-contain"
+              height={400}
+              src={image}
+              width={640}
+            />
+            <Button
+              className="absolute top-2 right-2"
+              onClick={() => onImageChange('')}
+              size="icon-xs"
+              type="button"
+              variant="secondary"
+            >
+              <X className="size-3" />
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                onClick={() => setImageInputMode('upload')}
+                size="sm"
+                type="button"
+                variant={imageInputMode === 'upload' ? 'default' : 'outline'}
+              >
+                <Upload className="mr-2 size-4" />
+                上传
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => setImageInputMode('url')}
+                size="sm"
+                type="button"
+                variant={imageInputMode === 'url' ? 'default' : 'outline'}
+              >
+                <LinkIcon className="mr-2 size-4" />
+                图片链接
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  setImageInputMode('screenshot')
+                  setScreenshotUrl(siteUrl)
+                }}
+                size="sm"
+                type="button"
+                variant={
+                  imageInputMode === 'screenshot' ? 'default' : 'outline'
+                }
+              >
+                <Camera className="mr-2 size-4" />
+                网页截图
+              </Button>
+            </div>
+
+            {imageInputMode === 'upload' && (
+              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-8 transition hover:bg-muted/50">
+                <ImageIcon className="size-6 text-muted-foreground" />
+                <span className="text-muted-foreground text-xs">
+                  {uploadControl.isPending || isPasting
+                    ? '上传中...'
+                    : '点击上传或粘贴图片（16:10 推荐）'}
+                </span>
+                <input
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadControl.isPending || isPasting}
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? [])
+                    if (files.length > 0) {
+                      uploadControl.upload(files)
+                    }
+                    e.target.value = ''
+                  }}
+                  type="file"
+                />
+              </label>
+            )}
+
+            {imageInputMode === 'url' && (
+              <div className="flex items-center gap-2">
+                <Input
+                  className="flex-1"
+                  onChange={(e) => setDirectImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.png"
+                  type="url"
+                  value={directImageUrl}
+                />
+                <Button
+                  disabled={!directImageUrl.trim()}
+                  onClick={handleSetDirectUrl}
+                  size="sm"
+                  type="button"
+                >
+                  设置
+                </Button>
+              </div>
+            )}
+
+            {imageInputMode === 'screenshot' && (
+              <div className="flex items-center gap-2">
+                <Input
+                  className="flex-1"
+                  onChange={(e) => setScreenshotUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  type="url"
+                  value={screenshotUrl}
+                />
+                <Button
+                  disabled={
+                    captureScreenshotMutation.isPending || !screenshotUrl.trim()
+                  }
+                  onClick={handleCaptureScreenshot}
+                  size="sm"
+                  type="button"
+                >
+                  {captureScreenshotMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      截图中...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="mr-2 size-4" />
+                      生成截图
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+interface SiteFormDialogProps {
+  categories: SiteCategory[]
+  editing: CuratedSiteWithTags | null
+  onClose: (saved?: boolean) => void
+  open: boolean
+}
+
+function SiteFormDialog({
+  open,
+  onClose,
+  editing,
+  categories,
+}: SiteFormDialogProps) {
+  const [form, setForm] = useState<SiteFormData>(emptyForm)
+  const [saving, setSaving] = useState(false)
+
+  const createSiteMutation = useCreateSite()
+  const updateSiteMutation = useUpdateSite()
+
+  useEffect(() => {
+    if (open) {
+      setForm(editing ? siteToForm(editing) : emptyForm)
+    }
+  }, [open, editing])
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      onClose()
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -324,158 +539,12 @@ function SiteFormDialog({
                 </CardContent>
               </Card>
 
-              {/* 网站截图 */}
-              <Card className="sm:col-span-2" size="sm">
-                <CardHeader className="border-b">
-                  <CardTitle>网站截图</CardTitle>
-                  <CardDescription>上传、输入链接或自动截图</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {form.image ? (
-                    <div className="relative">
-                      <img
-                        alt="网站截图"
-                        className="w-full rounded-lg border object-contain"
-                        height={400}
-                        src={form.image}
-                        width={640}
-                      />
-                      <Button
-                        className="absolute top-2 right-2"
-                        onClick={() => setField('image', '')}
-                        size="icon-xs"
-                        type="button"
-                        variant="secondary"
-                      >
-                        <X className="size-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Button
-                          className="flex-1"
-                          onClick={() => setImageInputMode('upload')}
-                          size="sm"
-                          type="button"
-                          variant={
-                            imageInputMode === 'upload' ? 'default' : 'outline'
-                          }
-                        >
-                          <Upload className="mr-2 size-4" />
-                          上传
-                        </Button>
-                        <Button
-                          className="flex-1"
-                          onClick={() => setImageInputMode('url')}
-                          size="sm"
-                          type="button"
-                          variant={
-                            imageInputMode === 'url' ? 'default' : 'outline'
-                          }
-                        >
-                          <LinkIcon className="mr-2 size-4" />
-                          图片链接
-                        </Button>
-                        <Button
-                          className="flex-1"
-                          onClick={() => {
-                            setImageInputMode('screenshot')
-                            setScreenshotUrl(form.href.trim())
-                          }}
-                          size="sm"
-                          type="button"
-                          variant={
-                            imageInputMode === 'screenshot'
-                              ? 'default'
-                              : 'outline'
-                          }
-                        >
-                          <Camera className="mr-2 size-4" />
-                          网页截图
-                        </Button>
-                      </div>
-
-                      {imageInputMode === 'upload' && (
-                        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-8 transition hover:bg-muted/50">
-                          <ImageIcon className="size-6 text-muted-foreground" />
-                          <span className="text-muted-foreground text-xs">
-                            {uploadControl.isPending
-                              ? '上传中...'
-                              : '点击上传网站截图（16:10 推荐）'}
-                          </span>
-                          <input
-                            accept="image/*"
-                            className="hidden"
-                            disabled={uploadControl.isPending}
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files ?? [])
-                              if (files.length > 0) {
-                                uploadControl.upload(files)
-                              }
-                              e.target.value = ''
-                            }}
-                            type="file"
-                          />
-                        </label>
-                      )}
-
-                      {imageInputMode === 'url' && (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            className="flex-1"
-                            onChange={(e) => setDirectImageUrl(e.target.value)}
-                            placeholder="https://example.com/image.png"
-                            type="url"
-                            value={directImageUrl}
-                          />
-                          <Button
-                            disabled={!directImageUrl.trim()}
-                            onClick={handleSetDirectUrl}
-                            size="sm"
-                            type="button"
-                          >
-                            设置
-                          </Button>
-                        </div>
-                      )}
-
-                      {imageInputMode === 'screenshot' && (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            className="flex-1"
-                            onChange={(e) => setScreenshotUrl(e.target.value)}
-                            placeholder="https://example.com"
-                            type="url"
-                            value={screenshotUrl}
-                          />
-                          <Button
-                            disabled={
-                              captureScreenshotMutation.isPending ||
-                              !screenshotUrl.trim()
-                            }
-                            onClick={handleCaptureScreenshot}
-                            size="sm"
-                            type="button"
-                          >
-                            {captureScreenshotMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 size-4 animate-spin" />
-                                截图中...
-                              </>
-                            ) : (
-                              <>
-                                <Camera className="mr-2 size-4" />
-                                生成截图
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SiteImageInput
+                image={form.image}
+                onImageChange={(url) => setField('image', url)}
+                open={open}
+                siteUrl={form.href.trim()}
+              />
 
               {/* 分类与标签 */}
               <Card size="sm">
@@ -486,6 +555,10 @@ function SiteFormDialog({
                   <div className="grid gap-1.5">
                     <Label>分类</Label>
                     <Select
+                      items={categories.map((cat) => ({
+                        label: cat.name,
+                        value: cat.name,
+                      }))}
                       onValueChange={(value) =>
                         setField('category', value ?? '')
                       }
@@ -714,6 +787,13 @@ export function CuratedSitesManager() {
           />
         </div>
         <Select
+          items={[
+            { label: '所有分类', value: '' },
+            ...categories.map((cat) => ({
+              label: cat.name,
+              value: cat.name,
+            })),
+          ]}
           onValueChange={(value) => setCategoryFilter(value ?? '')}
           value={categoryFilter}
         >
@@ -730,6 +810,11 @@ export function CuratedSitesManager() {
           </SelectContent>
         </Select>
         <Select
+          items={[
+            { label: '全部', value: 'all' },
+            { label: '已显示', value: 'visible' },
+            { label: '已隐藏', value: 'hidden' },
+          ]}
           onValueChange={(value) =>
             setVisibilityFilter(value as 'all' | 'visible' | 'hidden')
           }

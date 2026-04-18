@@ -3,6 +3,8 @@ import type { Browser } from 'playwright-core'
 import { chromium } from 'playwright-core'
 
 const TRAILING_SLASH_REGEX = /\/$/
+const TRACKING_DOMAIN_REGEX =
+  /doubleclick|googlesyndication|googletagmanager|google-analytics|analytics|clarity|hotjar|facebook\.net|connect\.facebook|segment|mixpanel|intercom|newrelic|sentry|ads/i
 
 export interface ScreenshotResult {
   error?: string
@@ -58,22 +60,54 @@ export async function captureScreenshot(
     const context = await browser.newContext({
       viewport: { width, height },
       deviceScaleFactor,
+      locale: 'en-US',
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+      extraHTTPHeaders: {
+        'accept-language': 'en-US,en;q=0.9',
+      },
     })
 
     const page = await context.newPage()
 
-    try {
-      await page.goto(url, {
-        waitUntil: 'networkidle',
-        timeout: 15_000,
-      })
-    } catch {
-      await page.goto(url, {
-        waitUntil: 'load',
-        timeout: 30_000,
-      })
+    await page.route('**/*', (route) => {
+      const request = route.request()
+      const resourceType = request.resourceType()
+
+      if (
+        resourceType === 'media' ||
+        resourceType === 'websocket' ||
+        TRACKING_DOMAIN_REGEX.test(request.url())
+      ) {
+        return route.abort()
+      }
+
+      return route.continue()
+    })
+
+    await page.goto(url, {
+      waitUntil: 'commit',
+      timeout: 15_000,
+    })
+
+    await Promise.race([
+      page.waitForSelector('body', {
+        timeout: 10_000,
+      }),
+      page.waitForLoadState('domcontentloaded', {
+        timeout: 10_000,
+      }),
+    ]).catch(async () => {
       await page.waitForTimeout(2000)
-    }
+    })
+
+    await page
+      .waitForLoadState('networkidle', {
+        timeout: 3000,
+      })
+      .catch(() => null)
+
+    await page.waitForTimeout(1500)
 
     const screenshot = await page.screenshot({
       type: 'png',

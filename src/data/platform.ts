@@ -53,6 +53,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '选择图标、渐变与背景，生成并导出 App 图标',
         href: '/tools/icon-maker',
         tags: ['图标', '导出'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-icon-maker.png',
       },
       {
         category: '转换',
@@ -60,6 +62,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '将图片转换为多尺寸 ICO 图标文件',
         href: '/tools/ico-converter',
         tags: ['ICO', '格式转换'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-ico-converter.png',
       },
       {
         category: '转换',
@@ -67,6 +71,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '纯浏览器端 AI 一键移除图片背景',
         href: '/tools/background-remover',
         tags: ['抠图', 'AI'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520019198-3d9c22e8-ab81-4cc8-be5d-38a883795f5b.png',
       },
       {
         category: '转换',
@@ -74,6 +80,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '导入图片，按固定比例、自由比例或固定尺寸裁切并导出',
         href: '/tools/logo-resize',
         tags: ['尺寸调整', '裁切'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-logo-resize.png',
       },
       {
         category: '转换',
@@ -81,6 +89,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '将位图 Logo 描摹转换为可缩放的 SVG 矢量图',
         href: '/tools/image-to-svg',
         tags: ['SVG', '矢量化'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-image-to-svg.png',
       },
       {
         category: '转换',
@@ -88,6 +98,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '浏览、编辑、优化 SVG 并转换为多种格式',
         href: '/tools/svg-viewer',
         tags: ['SVG', '查看', '优化'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-svg-viewer.png',
       },
       {
         category: '转换',
@@ -95,6 +107,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '去除 Gemini 生成图片的 nanobanana 水印',
         href: '/tools/watermark-remover',
         tags: ['清理', '图片'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-watermark-remover.png',
       },
     ],
   },
@@ -107,6 +121,8 @@ export const toolGroups: PlatformToolGroup[] = [
         description: '从图片中提取主题配色方案',
         href: '/tools/color-extractor',
         tags: ['配色', '提取'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-color-extractor.png',
       },
     ],
   },
