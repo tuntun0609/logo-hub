@@ -6,6 +6,13 @@ import type { Area } from 'react-easy-crop'
 import Cropper from 'react-easy-crop'
 import 'react-easy-crop/react-easy-crop.css'
 import { ToolHeader } from '@/components/tool-header'
+import {
+  ToolAlert,
+  ToolPageShell,
+  ToolPanel,
+  ToolUploadZone,
+  ToolWorkspace,
+} from '@/components/tool-shell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -303,327 +310,328 @@ export default function LogoResizePage() {
     Boolean(previewUrl) && (mode !== 'free' || cropSize !== undefined)
 
   return (
-    <div className="flex flex-col gap-6 p-2">
+    <ToolPageShell>
       <ToolHeader
         description="固定比例、自由比例或固定像素尺寸裁切并导出"
+        meta={['裁切导出', '多模式', '本地处理']}
         title="Logo Resize"
       />
 
-      <input
-        accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
-        className="hidden"
-        onChange={handleFileInput}
-        ref={fileInputRef}
-        type="file"
-      />
+      <ToolWorkspace size="xl">
+        <input
+          accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+          className="hidden"
+          onChange={handleFileInput}
+          ref={fileInputRef}
+          type="file"
+        />
 
-      {error && (
-        <div
-          aria-live="polite"
-          className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-          role="alert"
-        >
-          {error}
-        </div>
-      )}
+        {error && <ToolAlert>{error}</ToolAlert>}
 
-      {previewUrl ? (
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-medium text-sm">裁切预览</h2>
-              <Button
-                className="shrink-0"
-                onClick={handleClear}
-                size="sm"
-                type="button"
-                variant="ghost"
+        {previewUrl ? (
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+            <ToolPanel className="flex min-w-0 flex-1 flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-medium text-sm">裁切预览</h2>
+                <Button
+                  className="shrink-0"
+                  onClick={handleClear}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <X className="mr-1 size-3.5" />
+                  移除图片
+                </Button>
+              </div>
+              <div
+                className="relative w-full overflow-hidden rounded-xl border bg-muted/30"
+                ref={cropContainerRef}
+                style={{ height: 'clamp(320px, 65vh, 640px)' }}
               >
-                <X className="mr-1 size-3.5" />
-                移除图片
-              </Button>
-            </div>
-            <div
-              className="relative w-full overflow-hidden rounded-xl border bg-muted/30"
-              ref={cropContainerRef}
-              style={{ height: 'clamp(320px, 65vh, 640px)' }}
-            >
-              {cropperReady ? (
-                <Cropper
-                  aspect={aspectForCropper}
-                  crop={crop}
-                  cropSize={cropSize}
-                  image={previewUrl}
-                  maxZoom={3}
-                  minZoom={1}
-                  objectFit="contain"
-                  onCropAreaChange={onCropAreaChange}
-                  onCropChange={setCrop}
-                  onRotationChange={setRotation}
-                  onZoomChange={setZoom}
-                  rotation={rotation}
-                  zoom={zoom}
-                />
-              ) : (
-                <div className="flex size-full items-center justify-center text-muted-foreground text-sm">
-                  正在准备裁切区域…
+                {cropperReady ? (
+                  <Cropper
+                    aspect={aspectForCropper}
+                    crop={crop}
+                    cropSize={cropSize}
+                    image={previewUrl}
+                    maxZoom={3}
+                    minZoom={1}
+                    objectFit="contain"
+                    onCropAreaChange={onCropAreaChange}
+                    onCropChange={setCrop}
+                    onRotationChange={setRotation}
+                    onZoomChange={setZoom}
+                    rotation={rotation}
+                    zoom={zoom}
+                  />
+                ) : (
+                  <div className="flex size-full items-center justify-center text-muted-foreground text-sm">
+                    正在准备裁切区域…
+                  </div>
+                )}
+              </div>
+              {sourceImage && (
+                <p className="text-muted-foreground text-xs">
+                  原图尺寸：{sourceImage.naturalWidth} ×{' '}
+                  {sourceImage.naturalHeight} · 导出尺寸：{exportSizeLabel}
+                </p>
+              )}
+            </ToolPanel>
+
+            <ToolPanel className="flex w-full shrink-0 flex-col gap-5 lg:w-80">
+              <div className="flex flex-col gap-2">
+                <span className="text-muted-foreground text-xs">裁切模式</span>
+                <div className="flex flex-wrap gap-1 rounded-lg border bg-muted/30 p-1">
+                  {MODE_TABS.map((tab) => (
+                    <button
+                      className={cn(
+                        'rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                        mode === tab.id
+                          ? 'bg-background font-medium text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                      key={tab.id}
+                      onClick={() => setMode(tab.id)}
+                      type="button"
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {mode === 'fixed-ratio' && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-muted-foreground text-xs">比例</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ASPECT_PRESETS.map((p) => (
+                      <Button
+                        key={p.label}
+                        onClick={() => setAspectValue(p.value)}
+                        size="sm"
+                        type="button"
+                        variant={
+                          aspectValue === p.value ? 'default' : 'outline'
+                        }
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-            {sourceImage && (
-              <p className="text-muted-foreground text-xs">
-                原图尺寸：{sourceImage.naturalWidth} ×{' '}
-                {sourceImage.naturalHeight} · 导出尺寸：{exportSizeLabel}
-              </p>
-            )}
-          </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-5 lg:w-80">
-            <div className="flex flex-col gap-2">
-              <span className="text-muted-foreground text-xs">裁切模式</span>
-              <div className="flex flex-wrap gap-1 rounded-lg border bg-muted/30 p-1">
-                {MODE_TABS.map((tab) => (
-                  <button
-                    className={cn(
-                      'rounded-md px-2.5 py-1.5 text-xs transition-colors',
-                      mode === tab.id
-                        ? 'bg-background font-medium text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                    key={tab.id}
-                    onClick={() => setMode(tab.id)}
-                    type="button"
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {mode === 'fixed-ratio' && (
-              <div className="flex flex-col gap-2">
-                <span className="text-muted-foreground text-xs">比例</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {ASPECT_PRESETS.map((p) => (
-                    <Button
-                      key={p.label}
-                      onClick={() => setAspectValue(p.value)}
-                      size="sm"
-                      type="button"
-                      variant={aspectValue === p.value ? 'default' : 'outline'}
-                    >
-                      {p.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {mode === 'free' && (
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs">
-                      裁切框宽度
-                    </span>
-                    <span className="font-mono text-muted-foreground text-xs">
-                      {freeWidthPct}%
-                    </span>
+              {mode === 'free' && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs">
+                        裁切框宽度
+                      </span>
+                      <span className="font-mono text-muted-foreground text-xs">
+                        {freeWidthPct}%
+                      </span>
+                    </div>
+                    <Slider
+                      max={100}
+                      min={30}
+                      onValueChange={(v) => setFreeWidthPct(sliderFirst(v, 85))}
+                      step={1}
+                      value={[freeWidthPct]}
+                    />
                   </div>
-                  <Slider
-                    max={100}
-                    min={30}
-                    onValueChange={(v) => setFreeWidthPct(sliderFirst(v, 85))}
-                    step={1}
-                    value={[freeWidthPct]}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs">
-                      裁切框高度
-                    </span>
-                    <span className="font-mono text-muted-foreground text-xs">
-                      {freeHeightPct}%
-                    </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs">
+                        裁切框高度
+                      </span>
+                      <span className="font-mono text-muted-foreground text-xs">
+                        {freeHeightPct}%
+                      </span>
+                    </div>
+                    <Slider
+                      max={100}
+                      min={30}
+                      onValueChange={(v) =>
+                        setFreeHeightPct(sliderFirst(v, 85))
+                      }
+                      step={1}
+                      value={[freeHeightPct]}
+                    />
                   </div>
-                  <Slider
-                    max={100}
-                    min={30}
-                    onValueChange={(v) => setFreeHeightPct(sliderFirst(v, 85))}
-                    step={1}
-                    value={[freeHeightPct]}
-                  />
                 </div>
-              </div>
-            )}
+              )}
 
-            {mode === 'fixed-size' && (
-              <div className="flex flex-col gap-2">
-                <span className="text-muted-foreground text-xs">
-                  目标输出尺寸（像素）
-                </span>
-                <div className="flex items-center gap-2">
-                  <Input
-                    aria-label="目标宽度"
-                    className="font-mono"
-                    max={4096}
-                    min={1}
-                    onChange={(e) =>
-                      setTargetWidth(
-                        clampInt(Number(e.target.value) || 1, 1, 4096)
-                      )
-                    }
-                    type="number"
-                    value={targetWidth}
-                  />
-                  <span className="text-muted-foreground text-sm">×</span>
-                  <Input
-                    aria-label="目标高度"
-                    className="font-mono"
-                    max={4096}
-                    min={1}
-                    onChange={(e) =>
-                      setTargetHeight(
-                        clampInt(Number(e.target.value) || 1, 1, 4096)
-                      )
-                    }
-                    type="number"
-                    value={targetHeight}
-                  />
+              {mode === 'fixed-size' && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-muted-foreground text-xs">
+                    目标输出尺寸（像素）
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      aria-label="目标宽度"
+                      className="font-mono"
+                      max={4096}
+                      min={1}
+                      onChange={(e) =>
+                        setTargetWidth(
+                          clampInt(Number(e.target.value) || 1, 1, 4096)
+                        )
+                      }
+                      type="number"
+                      value={targetWidth}
+                    />
+                    <span className="text-muted-foreground text-sm">×</span>
+                    <Input
+                      aria-label="目标高度"
+                      className="font-mono"
+                      max={4096}
+                      min={1}
+                      onChange={(e) =>
+                        setTargetHeight(
+                          clampInt(Number(e.target.value) || 1, 1, 4096)
+                        )
+                      }
+                      type="number"
+                      value={targetHeight}
+                    />
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    裁切框比例与输出尺寸一致，导出时会缩放到上述宽高。
+                  </p>
                 </div>
-                <p className="text-muted-foreground text-xs">
-                  裁切框比例与输出尺寸一致，导出时会缩放到上述宽高。
-                </p>
-              </div>
-            )}
+              )}
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">缩放</span>
-                <span className="font-mono text-muted-foreground text-xs">
-                  {zoom.toFixed(2)}×
-                </span>
-              </div>
-              <Slider
-                max={300}
-                min={100}
-                onValueChange={(v) => setZoom(sliderFirst(v, 100) / 100)}
-                step={1}
-                value={[Math.round(zoom * 100)]}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">旋转</span>
-                <span className="font-mono text-muted-foreground text-xs">
-                  {rotation}°
-                </span>
-              </div>
-              <Slider
-                max={360}
-                min={0}
-                onValueChange={(v) => setRotation(sliderFirst(v, 0))}
-                step={1}
-                value={[rotation]}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label
-                className="text-muted-foreground text-xs"
-                htmlFor="export-format"
-              >
-                导出格式
-              </label>
-              <Select
-                onValueChange={(v) => setExportFormat(v as ExportImageFormat)}
-                value={exportFormat}
-              >
-                <SelectTrigger className="w-full" id="export-format">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPORT_FORMATS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {showQualitySlider && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-xs">
-                    压缩质量
-                  </span>
+                  <span className="text-muted-foreground text-xs">缩放</span>
                   <span className="font-mono text-muted-foreground text-xs">
-                    {exportQuality}%
+                    {zoom.toFixed(2)}×
                   </span>
                 </div>
                 <Slider
-                  max={100}
-                  min={10}
-                  onValueChange={(v) => setExportQuality(sliderFirst(v, 90))}
+                  max={300}
+                  min={100}
+                  onValueChange={(v) => setZoom(sliderFirst(v, 100) / 100)}
                   step={1}
-                  value={[exportQuality]}
+                  value={[Math.round(zoom * 100)]}
                 />
               </div>
-            )}
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                className="flex-1"
-                disabled={!cropPixelArea || isExporting}
-                onClick={handleDownload}
-                type="button"
-              >
-                <Download className="mr-1.5 size-4" />
-                {isExporting ? '导出中…' : '下载裁切结果'}
-              </Button>
-              <Button onClick={handleResetView} type="button" variant="outline">
-                <RotateCcw className="mr-1.5 size-4" />
-                重置视图
-              </Button>
-            </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs">旋转</span>
+                  <span className="font-mono text-muted-foreground text-xs">
+                    {rotation}°
+                  </span>
+                </div>
+                <Slider
+                  max={360}
+                  min={0}
+                  onValueChange={(v) => setRotation(sliderFirst(v, 0))}
+                  step={1}
+                  value={[rotation]}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-muted-foreground text-xs"
+                  htmlFor="export-format"
+                >
+                  导出格式
+                </label>
+                <Select
+                  onValueChange={(v) => setExportFormat(v as ExportImageFormat)}
+                  value={exportFormat}
+                >
+                  <SelectTrigger className="w-full" id="export-format">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPORT_FORMATS.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {showQualitySlider && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">
+                      压缩质量
+                    </span>
+                    <span className="font-mono text-muted-foreground text-xs">
+                      {exportQuality}%
+                    </span>
+                  </div>
+                  <Slider
+                    max={100}
+                    min={10}
+                    onValueChange={(v) => setExportQuality(sliderFirst(v, 90))}
+                    step={1}
+                    value={[exportQuality]}
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="flex-1"
+                  disabled={!cropPixelArea || isExporting}
+                  onClick={handleDownload}
+                  type="button"
+                >
+                  <Download className="mr-1.5 size-4" />
+                  {isExporting ? '导出中…' : '下载裁切结果'}
+                </Button>
+                <Button
+                  onClick={handleResetView}
+                  type="button"
+                  variant="outline"
+                >
+                  <RotateCcw className="mr-1.5 size-4" />
+                  重置视图
+                </Button>
+              </div>
+            </ToolPanel>
           </div>
-        </div>
-      ) : (
-        <button
-          className={cn(
-            'flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-colors',
-            isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
-          )}
-          onClick={() => fileInputRef.current?.click()}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          type="button"
-        >
-          <Upload className="size-8 text-muted-foreground" />
-          <span className="font-medium text-sm">点击或拖拽上传图片</span>
-          <span className="text-muted-foreground text-xs">
-            支持 PNG、JPG、WEBP、GIF，最大 10MB
-          </span>
-        </button>
-      )}
+        ) : (
+          <ToolUploadZone
+            description="按固定比例、自由比例或固定尺寸裁切并导出图片。"
+            formats={['PNG', 'JPG', 'WEBP', 'GIF']}
+            icon={Upload}
+            isDragging={isDragging}
+            maxSize="≤ 10MB"
+            note="上传后即可拖拽调整裁切区域，并导出 PNG、JPG 或 WEBP。"
+            onClick={() => fileInputRef.current?.click()}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            size="compact"
+            title="拖拽图片到此处，或点击上传"
+          />
+        )}
 
-      <div className="flex items-start gap-2 rounded-lg border bg-muted/20 p-3 text-muted-foreground text-xs">
-        <ImageIcon className="mt-0.5 size-4 shrink-0" />
-        <p>
-          使用 <span className="font-medium text-foreground">固定比例</span>{' '}
-          快速对齐常见画幅；{' '}
-          <span className="font-medium text-foreground">自由比例</span>{' '}
-          通过调整裁切框宽高占比实现任意比例；{' '}
-          <span className="font-medium text-foreground">固定大小</span>{' '}
-          在锁定比例后将结果缩放为指定像素尺寸。
-        </p>
-      </div>
-    </div>
+        <ToolPanel
+          className="flex items-start gap-2 text-muted-foreground text-xs"
+          tone="muted"
+        >
+          <ImageIcon className="mt-0.5 size-4 shrink-0" />
+          <p>
+            使用 <span className="font-medium text-foreground">固定比例</span>{' '}
+            快速对齐常见画幅；{' '}
+            <span className="font-medium text-foreground">自由比例</span>{' '}
+            通过调整裁切框宽高占比实现任意比例；{' '}
+            <span className="font-medium text-foreground">固定大小</span>{' '}
+            在锁定比例后将结果缩放为指定像素尺寸。
+          </p>
+        </ToolPanel>
+      </ToolWorkspace>
+    </ToolPageShell>
   )
 }

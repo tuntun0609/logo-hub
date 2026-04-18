@@ -7,10 +7,17 @@ import {
   getSwatchesSync,
   type SwatchMap,
 } from 'colorthief'
-import { Check, Copy, ImageIcon, Palette, Upload, X } from 'lucide-react'
+import { Check, Copy, ImageIcon, Palette, Upload } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ToolHeader } from '@/components/tool-header'
-import { Button } from '@/components/ui/button'
+import {
+  ToolAlert,
+  ToolFileSummary,
+  ToolPageShell,
+  ToolPanel,
+  ToolUploadZone,
+  ToolWorkspace,
+} from '@/components/tool-shell'
 import { Slider } from '@/components/ui/slider'
 import { loadImageFromFile, validateImageFile } from '@/lib/canvas-utils'
 import { cn } from '@/lib/utils'
@@ -253,68 +260,44 @@ export default function ColorExtractorPage() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-6">
+    <ToolPageShell>
       <ToolHeader
         description="从图片中提取主题配色方案"
+        meta={['配色提取', '复制色值', '浏览器端']}
         title="Theme Color Extractor"
       />
 
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        {/* Error */}
-        {error && (
-          <div
-            aria-live="polite"
-            className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
-          >
-            {error}
-          </div>
-        )}
+      <ToolWorkspace size="md">
+        {error && <ToolAlert>{error}</ToolAlert>}
 
-        {/* Upload zone */}
         {sourceFile ? (
-          <div className="flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3">
-            <ImageIcon className="size-5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-sm">{sourceFile.name}</p>
-              <p className="text-muted-foreground text-xs">
+          <ToolFileSummary
+            icon={ImageIcon}
+            meta={
+              <>
                 {sourceImage &&
                   `${sourceImage.naturalWidth} × ${sourceImage.naturalHeight}`}
                 {' · '}
                 {(sourceFile.size / 1024).toFixed(1)} KB
-              </p>
-            </div>
-            <Button
-              aria-label="移除图片"
-              onClick={handleClear}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
+              </>
+            }
+            name={sourceFile.name}
+            onClear={handleClear}
+          />
         ) : (
-          <button
-            aria-label="上传图片文件"
-            className={cn(
-              'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 transition-colors',
-              isDragging
-                ? 'border-primary bg-primary/5'
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-            )}
+          <ToolUploadZone
+            description="提取主色、调色板和语义色，适合快速整理品牌配色。"
+            formats={['PNG', 'JPG', 'SVG', 'WEBP', 'GIF']}
+            icon={Upload}
+            isDragging={isDragging}
+            maxSize="≤ 10MB"
+            note="上传后即可复制 HEX、RGB、HSL 或 OKLCH 色值。"
             onClick={() => fileInputRef.current?.click()}
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            type="button"
-          >
-            <Upload className="size-8 text-muted-foreground" />
-            <div className="text-center">
-              <p className="font-medium text-sm">拖拽图片到此处或点击上传</p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                支持 PNG, JPG, SVG, WEBP, GIF（≤10MB）
-              </p>
-            </div>
-          </button>
+            title="拖拽图片到此处，或点击上传"
+          />
         )}
 
         <input
@@ -325,9 +308,8 @@ export default function ColorExtractorPage() {
           type="file"
         />
 
-        {/* Color count slider */}
         {sourceImage && (
-          <div className="flex flex-col gap-3">
+          <ToolPanel className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="font-medium text-sm">提取颜色数量</h2>
               <span className="font-mono text-muted-foreground text-sm">
@@ -341,14 +323,13 @@ export default function ColorExtractorPage() {
               step={1}
               value={[colorCount]}
             />
-          </div>
+          </ToolPanel>
         )}
 
-        {/* Image preview + color strip */}
         {previewUrl && palette.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <ToolPanel className="flex flex-col gap-3">
             <h2 className="font-medium text-sm">预览</h2>
-            <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-start">
+            <div className="flex flex-col gap-3 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4 sm:flex-row sm:items-start">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt="上传的图片"
@@ -375,12 +356,11 @@ export default function ColorExtractorPage() {
                 </span>
               </div>
             </div>
-          </div>
+          </ToolPanel>
         )}
 
-        {/* Color format switcher + Dominant color */}
         {dominant && (
-          <div className="flex flex-col gap-3">
+          <ToolPanel className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="font-medium text-sm">主色调</h2>
               <ColorFormatSwitcher
@@ -430,12 +410,11 @@ export default function ColorExtractorPage() {
                 </span>
               </div>
             </button>
-          </div>
+          </ToolPanel>
         )}
 
-        {/* Palette grid */}
         {palette.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <ToolPanel className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <Palette className="size-4 text-muted-foreground" />
               <h2 className="font-medium text-sm">调色板</h2>
@@ -451,12 +430,11 @@ export default function ColorExtractorPage() {
                 />
               ))}
             </div>
-          </div>
+          </ToolPanel>
         )}
 
-        {/* Semantic swatches */}
         {swatches && (
-          <div className="flex flex-col gap-3">
+          <ToolPanel className="flex flex-col gap-3">
             <h2 className="font-medium text-sm">语义色</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {(
@@ -477,9 +455,9 @@ export default function ColorExtractorPage() {
                 )
               })}
             </div>
-          </div>
+          </ToolPanel>
         )}
-      </div>
-    </div>
+      </ToolWorkspace>
+    </ToolPageShell>
   )
 }

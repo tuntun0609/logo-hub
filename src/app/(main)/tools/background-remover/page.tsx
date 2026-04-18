@@ -3,9 +3,15 @@
 import { Download, Eraser, GripVertical, Loader2, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ToolHeader } from '@/components/tool-header'
+import {
+  ToolAlert,
+  ToolPageShell,
+  ToolPanel,
+  ToolUploadZone,
+  ToolWorkspace,
+} from '@/components/tool-shell'
 import { Button } from '@/components/ui/button'
 import { loadImageFromFile, validateImageFile } from '@/lib/canvas-utils'
-import { cn } from '@/lib/utils'
 
 const FILE_EXTENSION_REGEX = /\.[^.]+$/
 
@@ -283,58 +289,29 @@ export default function BackgroundRemoverPage() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-6">
-      <ToolHeader title="Background Remover" />
+    <ToolPageShell>
+      <ToolHeader
+        description="纯浏览器端 AI 一键移除图片背景，保留透明通道并支持前后对比。"
+        meta={['AI 抠图', '前后对比', 'PNG 导出']}
+        title="Background Remover"
+      />
 
-      <div className={cn('mx-auto my-12 flex w-full max-w-2xl flex-col gap-8')}>
-        {/* Error */}
-        {error && (
-          <div
-            aria-live="polite"
-            className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
-          >
-            {error}
-          </div>
-        )}
+      <ToolWorkspace className="py-4 sm:py-6" size="md">
+        {error && <ToolAlert>{error}</ToolAlert>}
 
-        {/* Upload zone */}
         {!sourceFile && (
-          <button
-            aria-label="上传图片文件"
-            className={cn(
-              'group relative flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-12 py-24 transition-all duration-200 ease-in-out',
-              isDragging
-                ? 'scale-[0.99] border-primary bg-primary/5'
-                : 'border-muted-foreground/20 bg-muted/10 hover:border-muted-foreground/40 hover:bg-muted/20'
-            )}
+          <ToolUploadZone
+            description="自动抠除主体背景，完成后可直接下载透明背景 PNG。"
+            formats={['PNG', 'JPG', 'SVG']}
+            icon={Upload}
+            isDragging={isDragging}
+            note="首次处理会下载模型文件，请稍等片刻。"
             onClick={() => fileInputRef.current?.click()}
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            type="button"
-          >
-            <div
-              className={cn(
-                'flex size-12 items-center justify-center rounded-full transition-colors duration-200',
-                isDragging
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-background text-muted-foreground shadow-sm group-hover:bg-muted/50'
-              )}
-            >
-              <Upload className="size-6" />
-            </div>
-            <div className="flex flex-col items-center gap-1 text-center">
-              <p className="font-medium text-base text-foreground">
-                点击上传{' '}
-                <span className="font-normal text-muted-foreground">
-                  或拖拽图片到此处
-                </span>
-              </p>
-              <p className="text-muted-foreground text-sm">
-                支持 PNG, JPG, SVG
-              </p>
-            </div>
-          </button>
+            title="拖拽图片到此处，或点击上传"
+          />
         )}
 
         <input
@@ -345,11 +322,10 @@ export default function BackgroundRemoverPage() {
           type="file"
         />
 
-        {/* Preview and Action */}
         {sourceFile && !resultUrl && (
-          <div className="flex flex-col items-center gap-8">
+          <ToolPanel className="flex flex-col items-center gap-8 p-5 sm:p-6">
             <div
-              className="relative w-full max-w-2xl overflow-hidden rounded-2xl border"
+              className="relative w-full max-w-2xl overflow-hidden rounded-[1.5rem] border border-border/70"
               style={CHECKERBOARD_STYLE}
             >
               {previewUrl && (
@@ -416,16 +392,15 @@ export default function BackgroundRemoverPage() {
                 </p>
               )}
             </div>
-          </div>
+          </ToolPanel>
         )}
 
-        {/* Before / After comparison slider */}
         {resultUrl && previewUrl && (
-          <div className="flex flex-col items-center gap-6">
+          <ToolPanel className="flex flex-col items-center gap-6 p-5 sm:p-6">
             <div className="flex w-full flex-col gap-3">
               <h2 className="text-center font-medium text-sm">对比预览</h2>
               <div
-                className="relative w-full cursor-col-resize touch-none select-none overflow-hidden rounded-2xl border"
+                className="relative w-full cursor-col-resize touch-none select-none overflow-hidden rounded-[1.5rem] border border-border/70"
                 onLostPointerCapture={handleSliderLostPointerCapture}
                 onPointerCancel={handleSliderPointerCancel}
                 onPointerDown={handleSliderPointerDown}
@@ -504,9 +479,9 @@ export default function BackgroundRemoverPage() {
                 下载 PNG
               </Button>
             </div>
-          </div>
+          </ToolPanel>
         )}
-      </div>
-    </div>
+      </ToolWorkspace>
+    </ToolPageShell>
   )
 }

@@ -33,52 +33,54 @@ export default function SvgViewerPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:h-[calc(100svh-2rem)] md:flex-none md:gap-3">
-      <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-        <ToolHeader
-          description="浏览、编辑、优化 SVG 并转换为多种格式"
-          title="SVG Viewer"
-        />
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1 sm:justify-start">
-          <input
-            accept=".svg,image/svg+xml"
-            className="hidden"
-            onChange={actions.handleFileChange}
-            ref={fileInputRef}
-            type="file"
-          />
-          <Button
-            aria-label="上传 SVG"
-            onClick={actions.openFilePicker}
-            size="sm"
-            variant="ghost"
-          >
-            <Upload className="size-3.5" />
-            上传
-          </Button>
-          <Button
-            disabled={!hasSvg}
-            onClick={actions.handleCopy}
-            size="sm"
-            variant="ghost"
-          >
-            {copied ? (
-              <Check className="size-3.5" />
-            ) : (
-              <Copy className="size-3.5" />
-            )}
-            {copied ? '已复制' : '复制'}
-          </Button>
-          <Button
-            disabled={!hasSvg}
-            onClick={actions.handleDownload}
-            size="sm"
-            variant="outline"
-          >
-            <Download className="size-3.5" />
-            下载
-          </Button>
-        </div>
-      </div>
+      <ToolHeader
+        actions={
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1 sm:justify-start">
+            <input
+              accept=".svg,image/svg+xml"
+              className="hidden"
+              onChange={actions.handleFileChange}
+              ref={fileInputRef}
+              type="file"
+            />
+            <Button
+              aria-label="上传 SVG"
+              onClick={actions.openFilePicker}
+              size="sm"
+              variant="ghost"
+            >
+              <Upload className="size-3.5" />
+              上传
+            </Button>
+            <Button
+              disabled={!hasSvg}
+              onClick={actions.handleCopy}
+              size="sm"
+              variant="ghost"
+            >
+              {copied ? (
+                <Check className="size-3.5" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
+              {copied ? '已复制' : '复制'}
+            </Button>
+            <Button
+              disabled={!hasSvg}
+              onClick={actions.handleDownload}
+              size="sm"
+              variant="outline"
+            >
+              <Download className="size-3.5" />
+              下载
+            </Button>
+          </div>
+        }
+        description="浏览、编辑、优化 SVG 并转换为多种格式"
+        meta={['SVG 编辑', '优化清理', '多格式输出']}
+        title="SVG Viewer"
+        variant="compact"
+      />
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden md:flex-row md:gap-2 md:overflow-hidden">
         <SvgViewerEditorPane

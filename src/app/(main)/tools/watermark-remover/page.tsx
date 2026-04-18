@@ -3,9 +3,15 @@
 import { Download, GripVertical, Loader2, Sparkles, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ToolHeader } from '@/components/tool-header'
+import {
+  ToolAlert,
+  ToolPageShell,
+  ToolPanel,
+  ToolUploadZone,
+  ToolWorkspace,
+} from '@/components/tool-shell'
 import { Button } from '@/components/ui/button'
 import { loadImageFromFile, validateImageFile } from '@/lib/canvas-utils'
-import { cn } from '@/lib/utils'
 import { removeWatermark } from '@/lib/watermark-engine'
 
 const FILE_EXTENSION_REGEX = /\.[^.]+$/
@@ -207,56 +213,29 @@ export default function WatermarkRemoverPage() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-6">
-      <ToolHeader title="Watermark Remover" />
+    <ToolPageShell>
+      <ToolHeader
+        description="针对 Gemini 生成图片的 nanobanana 水印做快速清理，并支持前后拖拽对比。"
+        meta={['图片清理', '前后对比', 'PNG 导出']}
+        title="Watermark Remover"
+      />
 
-      <div className={cn('mx-auto my-12 flex w-full max-w-2xl flex-col gap-8')}>
-        {error && (
-          <div
-            aria-live="polite"
-            className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive text-sm"
-          >
-            {error}
-          </div>
-        )}
+      <ToolWorkspace className="py-4 sm:py-6" size="md">
+        {error && <ToolAlert>{error}</ToolAlert>}
 
         {!sourceFile && (
-          <button
-            aria-label="上传图片文件"
-            className={cn(
-              'group relative flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-12 py-24 transition-all duration-200 ease-in-out',
-              isDragging
-                ? 'scale-[0.99] border-primary bg-primary/5'
-                : 'border-muted-foreground/20 bg-muted/10 hover:border-muted-foreground/40 hover:bg-muted/20'
-            )}
+          <ToolUploadZone
+            description="一键移除图片水印，并可立即查看前后对比。"
+            formats={['PNG', 'JPG', 'WEBP']}
+            icon={Upload}
+            isDragging={isDragging}
+            note="更适合处理边角清晰、背景相对干净的图片。"
             onClick={() => fileInputRef.current?.click()}
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            type="button"
-          >
-            <div
-              className={cn(
-                'flex size-12 items-center justify-center rounded-full transition-colors duration-200',
-                isDragging
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-background text-muted-foreground shadow-sm group-hover:bg-muted/50'
-              )}
-            >
-              <Upload className="size-6" />
-            </div>
-            <div className="flex flex-col items-center gap-1 text-center">
-              <p className="font-medium text-base text-foreground">
-                点击上传{' '}
-                <span className="font-normal text-muted-foreground">
-                  或拖拽图片到此处
-                </span>
-              </p>
-              <p className="text-muted-foreground text-sm">
-                支持 PNG, JPG, WEBP — 去除 Gemini 生成图片的水印
-              </p>
-            </div>
-          </button>
+            title="拖拽图片到此处，或点击上传"
+          />
         )}
 
         <input
@@ -268,8 +247,8 @@ export default function WatermarkRemoverPage() {
         />
 
         {sourceFile && !resultUrl && (
-          <div className="flex flex-col items-center gap-8">
-            <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border bg-muted/30">
+          <ToolPanel className="flex flex-col items-center gap-8 p-5 sm:p-6">
+            <div className="relative w-full max-w-2xl overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/30">
               {previewUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -308,14 +287,14 @@ export default function WatermarkRemoverPage() {
                 </span>
               </Button>
             </div>
-          </div>
+          </ToolPanel>
         )}
 
         {resultUrl && previewUrl && (
-          <div className="flex flex-col items-center gap-6">
+          <ToolPanel className="flex flex-col items-center gap-6 p-5 sm:p-6">
             <div className="flex w-full flex-col">
               <div
-                className="relative w-full cursor-col-resize touch-none select-none overflow-hidden rounded-2xl border bg-muted/30"
+                className="relative w-full cursor-col-resize touch-none select-none overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/30"
                 onLostPointerCapture={handleSliderLostPointerCapture}
                 onPointerCancel={handleSliderPointerCancel}
                 onPointerDown={handleSliderPointerDown}
@@ -387,9 +366,9 @@ export default function WatermarkRemoverPage() {
                 下载 PNG
               </Button>
             </div>
-          </div>
+          </ToolPanel>
         )}
-      </div>
-    </div>
+      </ToolWorkspace>
+    </ToolPageShell>
   )
 }

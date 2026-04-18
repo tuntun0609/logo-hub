@@ -90,61 +90,63 @@ export default function IconMakerPage() {
       className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden md:flex-none"
       style={{ height: 'calc(100svh - 2rem)' }}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2">
-        <ToolHeader
-          description="选择图标、自定义渐变与背景，导出 PNG"
-          title="Icon Maker"
-        />
-        <div className="flex items-center gap-1">
-          <Button
-            aria-label="Undo"
-            disabled={!canUndo}
-            onClick={undo}
-            size="icon-sm"
-            variant="ghost"
-          >
-            <Undo2 className="size-4" />
-          </Button>
-          <Button
-            aria-label="Redo"
-            disabled={!canRedo}
-            onClick={redo}
-            size="icon-sm"
-            variant="ghost"
-          >
-            <Redo2 className="size-4" />
-          </Button>
-          <Button
-            aria-label="Random icon"
-            onClick={handleRandomIcon}
-            size="icon-sm"
-            variant="ghost"
-          >
-            <Shuffle className="size-4" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={(triggerProps) => (
-                <Button size="sm" {...triggerProps}>
-                  <Download className="size-4" />
-                  Export icon
-                </Button>
-              )}
-            />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleDownload}>
-                Download PNG
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCopyImage}>
-                Copy Image
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCopyUrl}>
-                Copy URL
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <ToolHeader
+        actions={
+          <div className="flex items-center gap-1">
+            <Button
+              aria-label="Undo"
+              disabled={!canUndo}
+              onClick={undo}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <Undo2 className="size-4" />
+            </Button>
+            <Button
+              aria-label="Redo"
+              disabled={!canRedo}
+              onClick={redo}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <Redo2 className="size-4" />
+            </Button>
+            <Button
+              aria-label="Random icon"
+              onClick={handleRandomIcon}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <Shuffle className="size-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={(triggerProps) => (
+                  <Button size="sm" {...triggerProps}>
+                    <Download className="size-4" />
+                    Export icon
+                  </Button>
+                )}
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleDownload}>
+                  Download PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyImage}>
+                  Copy Image
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyUrl}>
+                  Copy URL
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        }
+        description="选择图标、自定义渐变与背景，导出 PNG"
+        meta={['图标生成', '渐变背景', 'PNG 导出']}
+        title="Icon Maker"
+        variant="compact"
+      />
 
       <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
         {/* Left: Icon picker */}
