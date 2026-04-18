@@ -379,7 +379,10 @@ function SiteFormDialog({
                         </Button>
                         <Button
                           className="flex-1"
-                          onClick={() => setImageInputMode('screenshot')}
+                          onClick={() => {
+                            setImageInputMode('screenshot')
+                            setScreenshotUrl(form.href.trim())
+                          }}
                           size="sm"
                           type="button"
                           variant={

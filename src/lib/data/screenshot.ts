@@ -62,10 +62,18 @@ export async function captureScreenshot(
 
     const page = await context.newPage()
 
-    await page.goto(url, {
-      waitUntil: 'networkidle',
-      timeout: 30_000,
-    })
+    try {
+      await page.goto(url, {
+        waitUntil: 'networkidle',
+        timeout: 15_000,
+      })
+    } catch {
+      await page.goto(url, {
+        waitUntil: 'load',
+        timeout: 30_000,
+      })
+      await page.waitForTimeout(2000)
+    }
 
     const screenshot = await page.screenshot({
       type: 'png',
