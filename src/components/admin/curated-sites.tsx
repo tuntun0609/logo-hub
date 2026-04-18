@@ -17,7 +17,7 @@ import {
   Upload,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,17 +42,18 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { curatedSites as staticSites } from '@/data/platform'
 import type { SiteCategory } from '@/db/schema'
-import { captureScreenshot } from '@/lib/actions/admin/screenshot'
+import type { CuratedSiteWithTags } from '@/lib/data/sites'
+import { useAdminCategories } from '@/lib/query/hooks/use-admin-categories'
+import { useCaptureScreenshot } from '@/lib/query/hooks/use-admin-screenshot'
 import {
-  createSite,
-  deleteSite,
-  type SearchSitesResult,
-  searchSites,
-  seedSites,
-  toggleSiteVisibility,
-  updateSite,
-} from '@/lib/actions/admin/sites'
-import type { CuratedSiteWithTags } from '@/lib/actions/sites'
+  useAdminSites,
+  useCreateSite,
+  useDeleteSite,
+  useSeedSites,
+  useToggleSiteVisibility,
+  useUpdateSite,
+} from '@/lib/query/hooks/use-admin-sites'
+import type { AdminSitesListParams } from '@/lib/query/keys'
 
 const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || ''
 
@@ -101,7 +102,7 @@ function siteToForm(site: CuratedSiteWithTags): SiteFormData {
 interface SiteFormDialogProps {
   categories: SiteCategory[]
   editing: CuratedSiteWithTags | null
-  onClose: () => void
+  onClose: (saved?: boolean) => void
   open: boolean
 }
 
@@ -118,7 +119,10 @@ function SiteFormDialog({
   >('upload')
   const [screenshotUrl, setScreenshotUrl] = useState('')
   const [directImageUrl, setDirectImageUrl] = useState('')
-  const [capturingScreenshot, setCapturingScreenshot] = useState(false)
+
+  const captureScreenshotMutation = useCaptureScreenshot()
+  const createSiteMutation = useCreateSite()
+  const updateSiteMutation = useUpdateSite()
 
   const { control: uploadControl } = useUploadFiles({
     route: 'logos',
@@ -159,26 +163,26 @@ function SiteFormDialog({
       return
     }
 
-    setCapturingScreenshot(true)
     try {
-      const result = await captureScreenshot(screenshotUrl, {
-        fullPage: false,
-        width: 1920,
-        height: 1080,
-        devicePixelRatio: 2,
-        uploadToR2: true,
+      const result = await captureScreenshotMutation.mutateAsync({
+        options: {
+          devicePixelRatio: 2,
+          fullPage: false,
+          height: 1080,
+          uploadToR2: true,
+          width: 1920,
+        },
+        url: screenshotUrl,
       })
 
       if (result.success && result.url) {
-        setForm((prev) => ({ ...prev, image: result.url! }))
+        setForm((prev) => ({ ...prev, image: result.url ?? '' }))
         toast.success('截图已生成')
       } else {
         toast.error(result.error || '截图失败')
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '截图失败')
-    } finally {
-      setCapturingScreenshot(false)
     }
   }
 
@@ -218,13 +222,13 @@ function SiteFormDialog({
       }
 
       if (editing) {
-        await updateSite(editing.id, data)
+        await updateSiteMutation.mutateAsync({ body: data, id: editing.id })
         toast.success('网站已更新')
       } else {
-        await createSite(data)
+        await createSiteMutation.mutateAsync(data)
         toast.success('网站已创建')
       }
-      onClose()
+      onClose(true)
     } catch (err) {
       if (err instanceof Error && err.message === 'duplicate_name') {
         toast.error(`站点名称 "${form.name.trim()}" 已存在`)
@@ -407,12 +411,15 @@ function SiteFormDialog({
                     />
                     <Button
                       className="w-full"
-                      disabled={capturingScreenshot || !screenshotUrl.trim()}
+                      disabled={
+                        captureScreenshotMutation.isPending ||
+                        !screenshotUrl.trim()
+                      }
                       onClick={handleCaptureScreenshot}
                       size="sm"
                       type="button"
                     >
-                      {capturingScreenshot ? (
+                      {captureScreenshotMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 size-4 animate-spin" />
                           截图中...
@@ -440,7 +447,7 @@ function SiteFormDialog({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
+                  <SelectItem key={cat.id} value={cat.name}>
                     {cat.name}
                   </SelectItem>
                 ))}
@@ -489,7 +496,7 @@ function SiteFormDialog({
           <DialogFooter>
             <Button
               disabled={saving}
-              onClick={onClose}
+              onClick={() => onClose()}
               type="button"
               variant="outline"
             >
@@ -506,15 +513,8 @@ function SiteFormDialog({
 }
 
 export function CuratedSitesManager() {
-  const [sites, setSites] = useState<SearchSitesResult>({
-    sites: [],
-    total: 0,
-    totalPages: 0,
-  })
-  const [categories, setCategories] = useState<SiteCategory[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [visibilityFilter, setVisibilityFilter] = useState<
     'all' | 'visible' | 'hidden'
   >('all')
@@ -529,70 +529,42 @@ export function CuratedSitesManager() {
     open: boolean
     title: string
   }>({ message: '', onConfirm: () => undefined, open: false, title: '' })
-  const [isPending, startTransition] = useTransition()
 
-  const loadData = useCallback(
-    (page = 1) => {
-      setLoading(true)
-      startTransition(async () => {
-        try {
-          let visibility: '' | 'visible' | 'hidden' | undefined
-          if (visibilityFilter === 'all') {
-            visibility = undefined
-          } else if (visibilityFilter === 'visible') {
-            visibility = 'visible'
-          } else {
-            visibility = 'hidden'
-          }
+  const { data: categories = [] } = useAdminCategories()
+  const seedSitesMutation = useSeedSites()
+  const deleteSiteMutation = useDeleteSite()
+  const toggleVisibilityMutation = useToggleSiteVisibility()
 
-          const result = await searchSites({
-            search: searchQuery,
-            category: categoryFilter || undefined,
-            visibility,
-            page,
-            pageSize: 20,
-          })
-          setSites(result)
-          setCurrentPage(page)
-        } catch {
-          toast.error('加载失败')
-        } finally {
-          setLoading(false)
-        }
-      })
-    },
-    [searchQuery, categoryFilter, visibilityFilter]
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, categoryFilter, visibilityFilter])
+
+  const listParams: AdminSitesListParams = useMemo(
+    () => ({
+      category: categoryFilter,
+      page: currentPage,
+      pageSize: 20,
+      search: searchQuery,
+      visibility: visibilityFilter,
+    }),
+    [categoryFilter, currentPage, searchQuery, visibilityFilter]
   )
 
-  useEffect(() => {
-    loadData(1)
-  }, [loadData])
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const { getAllCategories } = await import(
-          '@/lib/actions/admin/categories'
-        )
-        const cats = await getAllCategories()
-        setCategories(cats)
-      } catch {
-        // Ignore error
-      }
-    }
-    loadCategories()
-  }, [])
+  const { data: sitesResult, isPending, isFetching } = useAdminSites(listParams)
+  const sites = sitesResult ?? { sites: [], total: 0, totalPages: 0 }
+  const loading = isPending
+  const isPendingNav = isFetching
 
   const handleSeedData = () => {
     setConfirmDialog({
       message: `确定要导入 ${staticSites.length} 个静态站点数据吗？\n\n注意：已存在的站点名称会被跳过。`,
       onConfirm: async () => {
         try {
-          const result = await seedSites(staticSites)
+          const result = await seedSitesMutation.mutateAsync(staticSites)
           toast.success(
             `成功导入 ${result.inserted} 个站点，跳过 ${result.skipped.length} 个重复站点`
           )
-          loadData(1)
+          setCurrentPage(1)
         } catch {
           toast.error('导入失败')
         }
@@ -607,9 +579,8 @@ export function CuratedSitesManager() {
       message: `确定要删除 "${site.name}" 吗？`,
       onConfirm: async () => {
         try {
-          await deleteSite(site.id)
+          await deleteSiteMutation.mutateAsync(site.id)
           toast.success('已删除')
-          loadData(currentPage)
         } catch {
           toast.error('删除失败')
         }
@@ -621,9 +592,8 @@ export function CuratedSitesManager() {
 
   const handleToggleVisibility = async (site: CuratedSiteWithTags) => {
     try {
-      await toggleSiteVisibility(site.id, site.visible)
+      await toggleVisibilityMutation.mutateAsync(site.id)
       toast.success(site.visible ? '已隐藏' : '已显示')
-      loadData(currentPage)
     } catch {
       toast.error('操作失败')
     }
@@ -642,7 +612,6 @@ export function CuratedSitesManager() {
   const handleCloseDialog = () => {
     setDialogOpen(false)
     setEditingSite(null)
-    loadData(currentPage)
   }
 
   const totalPages = sites.totalPages
@@ -688,7 +657,7 @@ export function CuratedSitesManager() {
           <SelectContent>
             <SelectItem value="">所有分类</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
+              <SelectItem key={cat.id} value={cat.name}>
                 {cat.name}
               </SelectItem>
             ))}
@@ -840,16 +809,16 @@ export function CuratedSitesManager() {
               </p>
               <div className="flex gap-2">
                 <Button
-                  disabled={currentPage === 1 || isPending}
-                  onClick={() => loadData(currentPage - 1)}
+                  disabled={currentPage === 1 || isPendingNav}
+                  onClick={() => setCurrentPage((p) => p - 1)}
                   size="sm"
                   variant="outline"
                 >
                   <ChevronLeft className="size-4" />
                 </Button>
                 <Button
-                  disabled={currentPage === totalPages || isPending}
-                  onClick={() => loadData(currentPage + 1)}
+                  disabled={currentPage === totalPages || isPendingNav}
+                  onClick={() => setCurrentPage((p) => p + 1)}
                   size="sm"
                   variant="outline"
                 >

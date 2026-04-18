@@ -1,12 +1,52 @@
-'use server'
-
-import { asc, eq, inArray } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
+import type { Author } from '@/db/schema'
 import { authors } from '@/db/schema'
-import type { AuthorWithParsed } from '../authors'
 
-function parseAuthor(author: typeof authors.$inferSelect): AuthorWithParsed {
+export type { Author } from '@/db/schema'
+
+export interface AuthorWithParsed
+  extends Omit<Author, 'featuredWorks' | 'specialty'> {
+  featuredWorks: { title: string; url: string }[]
+  specialty: string[]
+}
+
+function parseAuthor(author: Author): AuthorWithParsed {
+  return {
+    ...author,
+    specialty: author.specialty
+      ? (JSON.parse(author.specialty) as string[])
+      : [],
+    featuredWorks: author.featuredWorks
+      ? (JSON.parse(author.featuredWorks) as { title: string; url: string }[])
+      : [],
+  }
+}
+
+export async function getVisibleAuthors(): Promise<AuthorWithParsed[]> {
+  const rows = await db
+    .select()
+    .from(authors)
+    .where(eq(authors.visible, true))
+    .orderBy(desc(authors.featured), asc(authors.order), asc(authors.id))
+  return rows.map(parseAuthor)
+}
+
+export async function getAuthorById(
+  id: number
+): Promise<AuthorWithParsed | null> {
+  const rows = await db
+    .select()
+    .from(authors)
+    .where(eq(authors.id, id))
+    .limit(1)
+  if (rows.length === 0 || !rows[0].visible) {
+    return null
+  }
+  return parseAuthor(rows[0])
+}
+
+function parseAuthorRow(author: typeof authors.$inferSelect): AuthorWithParsed {
   return {
     ...author,
     specialty: author.specialty
@@ -23,7 +63,7 @@ export async function getAllAuthors(): Promise<AuthorWithParsed[]> {
     .select()
     .from(authors)
     .orderBy(asc(authors.order), asc(authors.id))
-  return rows.map(parseAuthor)
+  return rows.map(parseAuthorRow)
 }
 
 interface AuthorInput {
@@ -38,7 +78,7 @@ interface AuthorInput {
   websiteUrl?: string
 }
 
-export async function createAuthor(data: AuthorInput) {
+export async function createAuthorRecord(data: AuthorInput) {
   await db.insert(authors).values({
     name: data.name,
     avatar: data.avatar || null,
@@ -52,11 +92,9 @@ export async function createAuthor(data: AuthorInput) {
     featured: data.featured,
     order: data.order ?? null,
   })
-  revalidatePath('/authors')
-  revalidatePath('/admin/authors')
 }
 
-export async function updateAuthor(id: number, data: AuthorInput) {
+export async function updateAuthorRecord(id: number, data: AuthorInput) {
   await db
     .update(authors)
     .set({
@@ -73,32 +111,30 @@ export async function updateAuthor(id: number, data: AuthorInput) {
       order: data.order ?? null,
     })
     .where(eq(authors.id, id))
-  revalidatePath('/authors')
-  revalidatePath('/admin/authors')
 }
 
-export async function deleteAuthor(id: number) {
+export async function deleteAuthorRecord(id: number) {
   await db.delete(authors).where(eq(authors.id, id))
-  revalidatePath('/authors')
-  revalidatePath('/admin/authors')
 }
 
-export async function toggleAuthorVisibility(id: number, visible: boolean) {
+export async function toggleAuthorVisibilityRecord(
+  id: number,
+  visible: boolean
+) {
   await db.update(authors).set({ visible: !visible }).where(eq(authors.id, id))
-  revalidatePath('/authors')
-  revalidatePath('/admin/authors')
 }
 
-export async function toggleAuthorFeatured(id: number, featured: boolean) {
+export async function toggleAuthorFeaturedRecord(
+  id: number,
+  featured: boolean
+) {
   await db
     .update(authors)
     .set({ featured: !featured })
     .where(eq(authors.id, id))
-  revalidatePath('/authors')
-  revalidatePath('/admin/authors')
 }
 
-export async function seedAuthors(
+export async function seedAuthorsRecord(
   items: Array<{
     avatar?: string
     bio?: string
@@ -153,8 +189,6 @@ export async function seedAuthors(
         featured: a.featured ?? false,
       }))
     )
-    revalidatePath('/authors')
-    revalidatePath('/admin/authors')
   }
 
   return {

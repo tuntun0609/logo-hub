@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import type { AuthorWithParsed } from '@/lib/actions/authors'
+import type { AuthorWithParsed } from '@/lib/data/authors'
 
 const WHITESPACE_RE = /\s+/
 

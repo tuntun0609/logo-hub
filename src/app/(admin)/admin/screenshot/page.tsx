@@ -4,10 +4,11 @@ import { Camera, Cloud, Download, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { captureScreenshot } from '@/lib/actions/admin/screenshot'
+import { useCaptureScreenshot } from '@/lib/query/hooks/use-admin-screenshot'
 
 export default function AdminScreenshotPage() {
   const [url, setUrl] = useState('')
+  const captureScreenshot = useCaptureScreenshot()
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
@@ -25,11 +26,14 @@ export default function AdminScreenshotPage() {
     setUploadedUrl(null)
 
     try {
-      const result = await captureScreenshot(url, {
-        fullPage,
-        width: 1920,
-        height: 1080,
-        devicePixelRatio: 2,
+      const result = await captureScreenshot.mutateAsync({
+        options: {
+          devicePixelRatio: 2,
+          fullPage,
+          height: 1080,
+          width: 1920,
+        },
+        url,
       })
 
       if (result.success && result.imageData) {
@@ -66,12 +70,15 @@ export default function AdminScreenshotPage() {
     setUploadedUrl(null)
 
     try {
-      const result = await captureScreenshot(url, {
-        fullPage,
-        width: 1920,
-        height: 1080,
-        devicePixelRatio: 2,
-        uploadToR2: true,
+      const result = await captureScreenshot.mutateAsync({
+        options: {
+          devicePixelRatio: 2,
+          fullPage,
+          height: 1080,
+          uploadToR2: true,
+          width: 1920,
+        },
+        url,
       })
 
       if (result.success && result.url) {

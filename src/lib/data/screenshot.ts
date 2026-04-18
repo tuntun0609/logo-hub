@@ -1,12 +1,10 @@
-'use server'
-
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import type { Browser } from 'playwright-core'
 import { chromium } from 'playwright-core'
 
 const TRAILING_SLASH_REGEX = /\/$/
 
-interface ScreenshotResult {
+export interface ScreenshotResult {
   error?: string
   imageData?: string
   success: boolean
@@ -14,17 +12,14 @@ interface ScreenshotResult {
 }
 
 async function getBrowser(): Promise<Browser> {
-  // 检测是否在 Vercel 或其他 serverless 环境
   const isServerless =
     process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 
   if (isServerless) {
-    // 在 serverless 环境使用 playwright-aws-lambda
     const playwrightAwsLambda = await import('playwright-aws-lambda')
     return await playwrightAwsLambda.default.launchChromium()
   }
 
-  // 本地环境使用标准 chromium
   return await chromium.launch({
     headless: true,
     args: [
@@ -49,18 +44,15 @@ export async function captureScreenshot(
   let browser: Browser | null = null
 
   try {
-    // 验证 URL
     const urlObj = new URL(url)
     if (!['http:', 'https:'].includes(urlObj.protocol)) {
       return { success: false, error: '仅支持 HTTP/HTTPS 协议' }
     }
 
-    // 设置视口大小（默认 1920x1080，2x 设备像素比）
     const width = options?.width || 1920
     const height = options?.height || 1080
     const deviceScaleFactor = options?.devicePixelRatio || 2
 
-    // 启动浏览器
     browser = await getBrowser()
 
     const context = await browser.newContext({
@@ -70,13 +62,11 @@ export async function captureScreenshot(
 
     const page = await context.newPage()
 
-    // 导航到目标页面
     await page.goto(url, {
       waitUntil: 'networkidle',
       timeout: 30_000,
     })
 
-    // 截图
     const screenshot = await page.screenshot({
       type: 'png',
       fullPage: options?.fullPage ?? false,
@@ -84,9 +74,7 @@ export async function captureScreenshot(
 
     await browser.close()
 
-    // 如果需要上传到 R2
     if (options?.uploadToR2) {
-      // 验证环境变量
       if (
         !(
           process.env.R2_ACCOUNT_ID &&
@@ -98,11 +86,9 @@ export async function captureScreenshot(
         return { success: false, error: '缺少 R2 配置' }
       }
 
-      // 生成文件名
       const timestamp = Date.now()
       const key = `screenshots/screenshot-${timestamp}.png`
 
-      // 配置 S3 客户端
       const s3Client = new S3Client({
         region: 'auto',
         endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -112,7 +98,6 @@ export async function captureScreenshot(
         },
       })
 
-      // 上传到 R2
       await s3Client.send(
         new PutObjectCommand({
           Bucket: process.env.R2_BUCKET_NAME,
@@ -122,7 +107,6 @@ export async function captureScreenshot(
         })
       )
 
-      // 构建公共 URL
       const publicUrl =
         process.env.R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_PUBLIC_URL || ''
       const r2Url = publicUrl
@@ -132,15 +116,13 @@ export async function captureScreenshot(
       return { success: true, url: r2Url }
     }
 
-    // 否则返回 base64（仅用于预览小图）
     const imageData = `data:image/png;base64,${screenshot.toString('base64')}`
 
     return { success: true, imageData }
   } catch (error) {
-    // 确保关闭浏览器
     if (browser) {
       await browser.close().catch(() => {
-        // 忽略关闭错误
+        // ignore
       })
     }
 

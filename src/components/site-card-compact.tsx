@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
-import type { CuratedSiteWithTags } from '@/lib/actions/sites'
+import type { CuratedSiteWithTags } from '@/lib/data/sites'
 
 interface SiteCardCompactProps {
   site: CuratedSiteWithTags

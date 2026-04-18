@@ -1,8 +1,7 @@
 'use client'
 
 import { Download, GripVertical, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,12 +18,12 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { SiteCategory } from '@/db/schema'
 import {
-  createCategory,
-  deleteCategory,
-  getAllCategories,
-  seedCategories,
-  updateCategory,
-} from '@/lib/actions/admin/categories'
+  useAdminCategories,
+  useCreateCategory,
+  useDeleteCategory,
+  useSeedCategories,
+  useUpdateCategory,
+} from '@/lib/query/hooks/use-admin-categories'
 
 const PRESET_CATEGORIES = [
   { name: '灵感案例', order: 1 },
@@ -49,6 +48,8 @@ function CategoryFormDialog({
   const [name, setName] = useState('')
   const [order, setOrder] = useState('')
   const [saving, setSaving] = useState(false)
+  const createCategory = useCreateCategory()
+  const updateCategory = useUpdateCategory()
 
   useEffect(() => {
     if (open) {
@@ -67,10 +68,16 @@ function CategoryFormDialog({
     try {
       const orderVal = order ? Number.parseInt(order, 10) : undefined
       if (editing) {
-        await updateCategory(editing.id, { name: name.trim(), order: orderVal })
+        await updateCategory.mutateAsync({
+          body: { name: name.trim(), order: orderVal },
+          id: editing.id,
+        })
         toast.success('分类已更新')
       } else {
-        await createCategory({ name: name.trim(), order: orderVal })
+        await createCategory.mutateAsync({
+          name: name.trim(),
+          order: orderVal,
+        })
         toast.success('分类已创建')
       }
       onDone()
@@ -145,6 +152,7 @@ function DeleteConfirmDialog({
   open: boolean
 }) {
   const [deleting, setDeleting] = useState(false)
+  const deleteCategory = useDeleteCategory()
 
   const handleDelete = async () => {
     if (!category) {
@@ -152,7 +160,7 @@ function DeleteConfirmDialog({
     }
     setDeleting(true)
     try {
-      await deleteCategory(category.id)
+      await deleteCategory.mutateAsync(category.id)
       toast.success(`已删除「${category.name}」`)
       onDone()
       onClose()
@@ -189,36 +197,18 @@ function DeleteConfirmDialog({
 }
 
 export default function AdminCategoriesPage() {
-  const router = useRouter()
-  const [categories, setCategories] = useState<SiteCategory[] | null>(null)
+  const { data: categories, isPending } = useAdminCategories()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<SiteCategory | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SiteCategory | null>(null)
   const [seeding, setSeeding] = useState(false)
-  const [, startTransition] = useTransition()
-
-  const loadCategories = () => {
-    startTransition(async () => {
-      const data = await getAllCategories()
-      setCategories(data)
-    })
-  }
-
-  useEffect(() => {
-    loadCategories()
-  }, [])
-
-  const handleRefresh = () => {
-    router.refresh()
-    loadCategories()
-  }
+  const seedCategories = useSeedCategories()
 
   const handleSeed = async () => {
     setSeeding(true)
     try {
-      await seedCategories(PRESET_CATEGORIES)
+      await seedCategories.mutateAsync(PRESET_CATEGORIES)
       toast.success(`已导入 ${PRESET_CATEGORIES.length} 个预置分类`)
-      handleRefresh()
     } catch {
       toast.error('导入失败')
     } finally {
@@ -226,7 +216,7 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  if (categories === null) {
+  if (categories === undefined || isPending) {
     return (
       <div className="space-y-6">
         <div>
@@ -336,13 +326,17 @@ export default function AdminCategoriesPage() {
           setFormOpen(false)
           setEditing(null)
         }}
-        onDone={handleRefresh}
+        onDone={() => {
+          /* cache invalidated by mutation */
+        }}
         open={formOpen}
       />
       <DeleteConfirmDialog
         category={deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onDone={handleRefresh}
+        onDone={() => {
+          /* cache invalidated by mutation */
+        }}
         open={!!deleteTarget}
       />
     </div>

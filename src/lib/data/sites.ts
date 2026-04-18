@@ -1,10 +1,53 @@
-'use server'
-
 import { and, asc, count, eq, inArray, like } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
 import { db } from '@/db'
-import { curatedSites } from '@/db/schema'
-import type { CuratedSiteWithTags } from '../sites'
+import type { CuratedSite, SiteCategory } from '@/db/schema'
+import { curatedSites, siteCategories } from '@/db/schema'
+
+export type { CuratedSite, SiteCategory } from '@/db/schema'
+
+export type CuratedSiteWithTags = Omit<CuratedSite, 'tags'> & {
+  tags: string[] | null
+}
+
+function parseTags(site: CuratedSite): CuratedSiteWithTags {
+  return {
+    ...site,
+    tags: site.tags ? (JSON.parse(site.tags) as string[]) : null,
+  }
+}
+
+export async function getSites(
+  category?: string
+): Promise<CuratedSiteWithTags[]> {
+  const rows = await db
+    .select()
+    .from(curatedSites)
+    .where(
+      and(
+        eq(curatedSites.visible, true),
+        category ? eq(curatedSites.category, category) : undefined
+      )
+    )
+    .orderBy(asc(curatedSites.order), asc(curatedSites.id))
+  return rows.map(parseTags)
+}
+
+export function getCategories(): Promise<SiteCategory[]> {
+  return db
+    .select()
+    .from(siteCategories)
+    .orderBy(asc(siteCategories.order), asc(siteCategories.id))
+}
+
+export async function getCategoryById(
+  id: number
+): Promise<SiteCategory | undefined> {
+  const rows = await db
+    .select()
+    .from(siteCategories)
+    .where(eq(siteCategories.id, id))
+  return rows[0]
+}
 
 export interface SearchSitesParams {
   category?: string
@@ -23,7 +66,7 @@ export interface SearchSitesResult {
 export async function searchSites(
   params: SearchSitesParams = {}
 ): Promise<SearchSitesResult> {
-  const { search, category, visibility, page = 0, pageSize = 20 } = params
+  const { search, category, visibility, page = 1, pageSize = 20 } = params
 
   const conditions: ReturnType<typeof eq>[] = []
   if (search) {
@@ -47,7 +90,7 @@ export async function searchSites(
       .where(where)
       .orderBy(asc(curatedSites.order), asc(curatedSites.id))
       .limit(pageSize)
-      .offset(page * pageSize),
+      .offset((page - 1) * pageSize),
     db.select({ total: count() }).from(curatedSites).where(where),
   ])
 
@@ -84,7 +127,7 @@ interface SiteInput {
   visible: boolean
 }
 
-export async function createSite(data: SiteInput) {
+export async function createSiteRecord(data: SiteInput) {
   const existing = await db
     .select({ id: curatedSites.id })
     .from(curatedSites)
@@ -104,11 +147,9 @@ export async function createSite(data: SiteInput) {
     order: data.order ?? null,
     visible: data.visible,
   })
-  revalidatePath('/sites')
-  revalidatePath('/admin/sites')
 }
 
-export async function updateSite(id: number, data: SiteInput) {
+export async function updateSiteRecord(id: number, data: SiteInput) {
   const existing = await db
     .select({ id: curatedSites.id })
     .from(curatedSites)
@@ -131,26 +172,20 @@ export async function updateSite(id: number, data: SiteInput) {
       visible: data.visible,
     })
     .where(eq(curatedSites.id, id))
-  revalidatePath('/sites')
-  revalidatePath('/admin/sites')
 }
 
-export async function deleteSite(id: number) {
+export async function deleteSiteRecord(id: number) {
   await db.delete(curatedSites).where(eq(curatedSites.id, id))
-  revalidatePath('/sites')
-  revalidatePath('/admin/sites')
 }
 
-export async function toggleSiteVisibility(id: number, visible: boolean) {
+export async function toggleSiteVisibilityRecord(id: number, visible: boolean) {
   await db
     .update(curatedSites)
     .set({ visible: !visible })
     .where(eq(curatedSites.id, id))
-  revalidatePath('/sites')
-  revalidatePath('/admin/sites')
 }
 
-export async function seedSites(
+export async function seedSitesRecord(
   sites: Array<{
     category: string
     description: string
@@ -160,7 +195,6 @@ export async function seedSites(
     tags?: string[]
   }>
 ): Promise<{ inserted: number; skipped: string[] }> {
-  // Deduplicate input by name (keep first occurrence)
   const seen = new Set<string>()
   const deduped = sites.filter((s) => {
     if (seen.has(s.name)) {
@@ -170,7 +204,6 @@ export async function seedSites(
     return true
   })
 
-  // Find names that already exist in DB
   const names = deduped.map((s) => s.name)
   const existingRows = await db
     .select({ name: curatedSites.name })
@@ -183,7 +216,6 @@ export async function seedSites(
     .filter((s) => existingNames.has(s.name))
     .map((s) => s.name)
 
-  // Also collect intra-batch duplicates that were filtered out
   const intraBatchSkipped = sites
     .filter((s, i) => {
       const first = sites.findIndex((x) => x.name === s.name)
@@ -204,8 +236,6 @@ export async function seedSites(
         visible: true,
       }))
     )
-    revalidatePath('/sites')
-    revalidatePath('/admin/sites')
   }
 
   return {

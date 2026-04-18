@@ -11,7 +11,7 @@ import {
   Upload,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -29,16 +29,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import type { AuthorWithParsed } from '@/lib/data/authors'
 import {
-  createAuthor,
-  deleteAuthor,
-  getAllAuthors,
-  seedAuthors,
-  toggleAuthorFeatured,
-  toggleAuthorVisibility,
-  updateAuthor,
-} from '@/lib/actions/admin/authors'
-import type { AuthorWithParsed } from '@/lib/actions/authors'
+  useAdminAuthors,
+  useCreateAuthor,
+  useDeleteAuthor,
+  useSeedAuthors,
+  useToggleAuthorFeatured,
+  useToggleAuthorVisibility,
+  useUpdateAuthor,
+} from '@/lib/query/hooks/use-admin-authors'
 
 interface AuthorFormData {
   avatar: string
@@ -89,6 +89,8 @@ interface AuthorFormDialogProps {
 function AuthorFormDialog({ open, onClose, editing }: AuthorFormDialogProps) {
   const [form, setForm] = useState<AuthorFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const createAuthor = useCreateAuthor()
+  const updateAuthor = useUpdateAuthor()
 
   useEffect(() => {
     if (open) {
@@ -155,10 +157,10 @@ function AuthorFormDialog({ open, onClose, editing }: AuthorFormDialogProps) {
       }
 
       if (editing) {
-        await updateAuthor(editing.id, data)
+        await updateAuthor.mutateAsync({ body: data, id: editing.id })
         toast.success('作者已更新')
       } else {
-        await createAuthor(data)
+        await createAuthor.mutateAsync(data)
         toast.success('作者已创建')
       }
       onClose()
@@ -328,6 +330,7 @@ function DeleteConfirmDialog({
   author,
 }: DeleteConfirmDialogProps) {
   const [deleting, setDeleting] = useState(false)
+  const deleteAuthor = useDeleteAuthor()
 
   const handleDelete = async () => {
     if (!author) {
@@ -335,7 +338,7 @@ function DeleteConfirmDialog({
     }
     setDeleting(true)
     try {
-      await deleteAuthor(author.id)
+      await deleteAuthor.mutateAsync(author.id)
       toast.success(`已删除 "${author.name}"`)
       onClose()
     } catch {
@@ -547,6 +550,7 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
   const [jsonText, setJsonText] = useState('')
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
+  const seedAuthors = useSeedAuthors()
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -565,7 +569,9 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
     }
     setImporting(true)
     try {
-      const { inserted, skipped } = await seedAuthors(result.authors)
+      const { inserted, skipped } = await seedAuthors.mutateAsync(
+        result.authors
+      )
       if (inserted > 0) {
         toast.success(`已成功导入 ${inserted} 位作者`)
       }
@@ -637,25 +643,15 @@ function JsonImportDialog({ open, onClose }: JsonImportDialogProps) {
 // --- Main Content ---
 
 export function AdminAuthorsContent() {
-  const [authors, setAuthors] = useState<AuthorWithParsed[]>([])
+  const { data: authors = [], isPending } = useAdminAuthors()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<AuthorWithParsed | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AuthorWithParsed | null>(
     null
   )
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
-
-  const fetchAuthors = useCallback(() => {
-    startTransition(async () => {
-      const result = await getAllAuthors()
-      setAuthors(result)
-    })
-  }, [])
-
-  useEffect(() => {
-    fetchAuthors()
-  }, [fetchAuthors])
+  const toggleVisibility = useToggleAuthorVisibility()
+  const toggleFeatured = useToggleAuthorFeatured()
 
   const handleEdit = (author: AuthorWithParsed) => {
     setEditing(author)
@@ -669,9 +665,8 @@ export function AdminAuthorsContent() {
 
   const handleToggleVisibility = async (author: AuthorWithParsed) => {
     try {
-      await toggleAuthorVisibility(author.id, author.visible)
+      await toggleVisibility.mutateAsync(author.id)
       toast.success(`已${author.visible ? '隐藏' : '显示'} "${author.name}"`)
-      fetchAuthors()
     } catch {
       toast.error('操作失败')
     }
@@ -679,11 +674,10 @@ export function AdminAuthorsContent() {
 
   const handleToggleFeatured = async (author: AuthorWithParsed) => {
     try {
-      await toggleAuthorFeatured(author.id, author.featured)
+      await toggleFeatured.mutateAsync(author.id)
       toast.success(
         `已${author.featured ? '取消推荐' : '设为推荐'} "${author.name}"`
       )
-      fetchAuthors()
     } catch {
       toast.error('操作失败')
     }
@@ -754,7 +748,6 @@ export function AdminAuthorsContent() {
         onClose={() => {
           setFormOpen(false)
           setEditing(null)
-          fetchAuthors()
         }}
         open={formOpen}
       />
@@ -762,14 +755,12 @@ export function AdminAuthorsContent() {
         author={deleteTarget}
         onClose={() => {
           setDeleteTarget(null)
-          fetchAuthors()
         }}
         open={!!deleteTarget}
       />
       <JsonImportDialog
         onClose={() => {
           setJsonImportOpen(false)
-          fetchAuthors()
         }}
         open={jsonImportOpen}
       />

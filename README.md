@@ -18,6 +18,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## 管理后台与 Clerk
+
+`/admin` 与 `/api/admin/*` 需要用户在 Clerk 的 `public_metadata` 中带有 `role: "admin"`，并在会话 JWT 中暴露 `metadata` 字段。配置说明见 [docs/CLERK_ADMIN_SESSION.md](docs/CLERK_ADMIN_SESSION.md)。
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
