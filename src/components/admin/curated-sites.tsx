@@ -22,6 +22,13 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -258,255 +265,311 @@ function SiteFormDialog({
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{editing ? '编辑网站' : '新增网站'}</DialogTitle>
-          <DialogDescription>
-            {editing ? '修改推荐网站信息' : '添加一个新的推荐网站'}
-          </DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid gap-2">
-            <Label htmlFor="name">站点名称 *</Label>
-            <Input
-              id="name"
-              onChange={(e) => setField('name', e.target.value)}
-              placeholder="例如: Behance"
-              required
-              value={form.name}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="href">网站链接 *</Label>
-            <Input
-              id="href"
-              onChange={(e) => setField('href', e.target.value)}
-              placeholder="https://..."
-              required
-              type="url"
-              value={form.href}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">简介 *</Label>
-            <Textarea
-              id="description"
-              onChange={(e) => setField('description', e.target.value)}
-              placeholder="一两句话介绍这个网站..."
-              rows={3}
-              value={form.description}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label>网站截图</Label>
-            {form.image ? (
-              <div className="relative">
-                <img
-                  alt="网站截图"
-                  className="aspect-video w-full rounded-lg border object-cover"
-                  height={180}
-                  src={form.image}
-                  width={320}
-                />
-                <Button
-                  className="absolute top-2 right-2"
-                  onClick={() => setField('image', '')}
-                  size="icon-xs"
-                  type="button"
-                  variant="secondary"
-                >
-                  <X className="size-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1"
-                    onClick={() => setImageInputMode('upload')}
-                    size="sm"
-                    type="button"
-                    variant={
-                      imageInputMode === 'upload' ? 'default' : 'outline'
-                    }
-                  >
-                    <Upload className="mr-2 size-4" />
-                    上传
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => setImageInputMode('url')}
-                    size="sm"
-                    type="button"
-                    variant={imageInputMode === 'url' ? 'default' : 'outline'}
-                  >
-                    <LinkIcon className="mr-2 size-4" />
-                    图片链接
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => setImageInputMode('screenshot')}
-                    size="sm"
-                    type="button"
-                    variant={
-                      imageInputMode === 'screenshot' ? 'default' : 'outline'
-                    }
-                  >
-                    <Camera className="mr-2 size-4" />
-                    网页截图
-                  </Button>
-                </div>
-
-                {imageInputMode === 'upload' && (
-                  <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-6 transition hover:bg-muted/50">
-                    <ImageIcon className="size-6 text-muted-foreground" />
-                    <span className="text-muted-foreground text-xs">
-                      {uploadControl.isPending
-                        ? '上传中...'
-                        : '点击上传网站截图（16:10 推荐）'}
-                    </span>
-                    <input
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadControl.isPending}
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files ?? [])
-                        if (files.length > 0) {
-                          uploadControl.upload(files)
-                        }
-                        e.target.value = ''
-                      }}
-                      type="file"
-                    />
-                  </label>
-                )}
-
-                {imageInputMode === 'url' && (
-                  <div className="space-y-2">
+      <DialogContent className="flex! max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <div className="shrink-0 px-6 pt-6 pb-2">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              {editing ? '编辑网站' : '新增网站'}
+            </DialogTitle>
+            <DialogDescription>
+              {editing ? '修改推荐网站信息' : '添加一个新的推荐网站'}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <form
+            className="grid gap-5 px-6 pt-2 pb-6"
+            id="site-form"
+            onSubmit={handleSubmit}
+          >
+            <div className="grid gap-5 sm:grid-cols-2">
+              {/* 基本信息 */}
+              <Card className="sm:col-span-2" size="sm">
+                <CardHeader className="border-b">
+                  <CardTitle>基本信息</CardTitle>
+                  <CardDescription>站点名称、链接和简介</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="name">站点名称 *</Label>
                     <Input
-                      onChange={(e) => setDirectImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.png"
-                      type="url"
-                      value={directImageUrl}
+                      id="name"
+                      onChange={(e) => setField('name', e.target.value)}
+                      placeholder="例如: Behance"
+                      required
+                      value={form.name}
                     />
-                    <Button
-                      className="w-full"
-                      disabled={!directImageUrl.trim()}
-                      onClick={handleSetDirectUrl}
-                      size="sm"
-                      type="button"
-                    >
-                      设置图片
-                    </Button>
                   </div>
-                )}
-
-                {imageInputMode === 'screenshot' && (
-                  <div className="space-y-2">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="href">网站链接 *</Label>
                     <Input
-                      onChange={(e) => setScreenshotUrl(e.target.value)}
-                      placeholder="https://example.com"
+                      id="href"
+                      onChange={(e) => setField('href', e.target.value)}
+                      placeholder="https://..."
+                      required
                       type="url"
-                      value={screenshotUrl}
+                      value={form.href}
                     />
-                    <Button
-                      className="w-full"
-                      disabled={
-                        captureScreenshotMutation.isPending ||
-                        !screenshotUrl.trim()
-                      }
-                      onClick={handleCaptureScreenshot}
-                      size="sm"
-                      type="button"
-                    >
-                      {captureScreenshotMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                          截图中...
-                        </>
-                      ) : (
-                        <>
+                  </div>
+                  <div className="grid gap-1.5 sm:col-span-2">
+                    <Label htmlFor="description">简介 *</Label>
+                    <Textarea
+                      id="description"
+                      onChange={(e) => setField('description', e.target.value)}
+                      placeholder="一两句话介绍这个网站..."
+                      rows={2}
+                      value={form.description}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 网站截图 */}
+              <Card className="sm:col-span-2" size="sm">
+                <CardHeader className="border-b">
+                  <CardTitle>网站截图</CardTitle>
+                  <CardDescription>上传、输入链接或自动截图</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {form.image ? (
+                    <div className="relative">
+                      <img
+                        alt="网站截图"
+                        className="w-full rounded-lg border object-contain"
+                        height={400}
+                        src={form.image}
+                        width={640}
+                      />
+                      <Button
+                        className="absolute top-2 right-2"
+                        onClick={() => setField('image', '')}
+                        size="icon-xs"
+                        type="button"
+                        variant="secondary"
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1"
+                          onClick={() => setImageInputMode('upload')}
+                          size="sm"
+                          type="button"
+                          variant={
+                            imageInputMode === 'upload' ? 'default' : 'outline'
+                          }
+                        >
+                          <Upload className="mr-2 size-4" />
+                          上传
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          onClick={() => setImageInputMode('url')}
+                          size="sm"
+                          type="button"
+                          variant={
+                            imageInputMode === 'url' ? 'default' : 'outline'
+                          }
+                        >
+                          <LinkIcon className="mr-2 size-4" />
+                          图片链接
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          onClick={() => setImageInputMode('screenshot')}
+                          size="sm"
+                          type="button"
+                          variant={
+                            imageInputMode === 'screenshot'
+                              ? 'default'
+                              : 'outline'
+                          }
+                        >
                           <Camera className="mr-2 size-4" />
-                          生成截图
-                        </>
+                          网页截图
+                        </Button>
+                      </div>
+
+                      {imageInputMode === 'upload' && (
+                        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-8 transition hover:bg-muted/50">
+                          <ImageIcon className="size-6 text-muted-foreground" />
+                          <span className="text-muted-foreground text-xs">
+                            {uploadControl.isPending
+                              ? '上传中...'
+                              : '点击上传网站截图（16:10 推荐）'}
+                          </span>
+                          <input
+                            accept="image/*"
+                            className="hidden"
+                            disabled={uploadControl.isPending}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files ?? [])
+                              if (files.length > 0) {
+                                uploadControl.upload(files)
+                              }
+                              e.target.value = ''
+                            }}
+                            type="file"
+                          />
+                        </label>
                       )}
-                    </Button>
+
+                      {imageInputMode === 'url' && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            className="flex-1"
+                            onChange={(e) => setDirectImageUrl(e.target.value)}
+                            placeholder="https://example.com/image.png"
+                            type="url"
+                            value={directImageUrl}
+                          />
+                          <Button
+                            disabled={!directImageUrl.trim()}
+                            onClick={handleSetDirectUrl}
+                            size="sm"
+                            type="button"
+                          >
+                            设置
+                          </Button>
+                        </div>
+                      )}
+
+                      {imageInputMode === 'screenshot' && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            className="flex-1"
+                            onChange={(e) => setScreenshotUrl(e.target.value)}
+                            placeholder="https://example.com"
+                            type="url"
+                            value={screenshotUrl}
+                          />
+                          <Button
+                            disabled={
+                              captureScreenshotMutation.isPending ||
+                              !screenshotUrl.trim()
+                            }
+                            onClick={handleCaptureScreenshot}
+                            size="sm"
+                            type="button"
+                          >
+                            {captureScreenshotMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                截图中...
+                              </>
+                            ) : (
+                              <>
+                                <Camera className="mr-2 size-4" />
+                                生成截图
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 分类与标签 */}
+              <Card size="sm">
+                <CardHeader className="border-b">
+                  <CardTitle>分类与标签</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-1.5">
+                    <Label>分类</Label>
+                    <Select
+                      onValueChange={(value) =>
+                        setField('category', value ?? '')
+                      }
+                      value={form.category}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="选择分类" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="grid gap-2">
-            <Label>分类</Label>
-            <Select
-              onValueChange={(value) => setField('category', value ?? '')}
-              value={form.category}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="选择分类" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="tags">标签</Label>
-            <Input
-              id="tags"
-              onChange={(e) => setField('tags', e.target.value)}
-              placeholder="用逗号分隔，例如: 设计, 灵感, 作品集"
-              value={form.tags}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="notes">备注</Label>
-            <Textarea
-              id="notes"
-              onChange={(e) => setField('notes', e.target.value)}
-              placeholder="内部备注（不会显示给用户）"
-              rows={2}
-              value={form.notes}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="order">排序</Label>
-            <Input
-              id="order"
-              onChange={(e) => setField('order', e.target.value)}
-              placeholder="数字越小越靠前"
-              type="number"
-              value={form.order}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={form.visible}
-              id="visible"
-              onCheckedChange={(checked) => setField('visible', checked)}
-            />
-            <Label className="cursor-pointer" htmlFor="visible">
-              显示在前台
-            </Label>
-          </div>
-          <DialogFooter>
-            <Button
-              disabled={saving}
-              onClick={() => onClose()}
-              type="button"
-              variant="outline"
-            >
-              取消
-            </Button>
-            <Button disabled={saving} type="submit">
-              {submitLabel}
-            </Button>
-          </DialogFooter>
-        </form>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="tags">标签</Label>
+                    <Input
+                      id="tags"
+                      onChange={(e) => setField('tags', e.target.value)}
+                      placeholder="用逗号分隔，例如: 设计, 灵感"
+                      value={form.tags}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 其他设置 */}
+              <Card size="sm">
+                <CardHeader className="border-b">
+                  <CardTitle>其他设置</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="notes">备注</Label>
+                    <Textarea
+                      id="notes"
+                      onChange={(e) => setField('notes', e.target.value)}
+                      placeholder="内部备注（不会显示给用户）"
+                      rows={2}
+                      value={form.notes}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 items-end gap-4">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="order">排序</Label>
+                      <Input
+                        id="order"
+                        onChange={(e) => setField('order', e.target.value)}
+                        placeholder="数字越小越靠前"
+                        type="number"
+                        value={form.order}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pb-1.5">
+                      <Switch
+                        checked={form.visible}
+                        id="visible"
+                        onCheckedChange={(checked) =>
+                          setField('visible', checked)
+                        }
+                      />
+                      <Label className="cursor-pointer" htmlFor="visible">
+                        显示在前台
+                      </Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </form>
+        </div>
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl px-6">
+          <Button
+            disabled={saving}
+            onClick={() => onClose()}
+            type="button"
+            variant="outline"
+          >
+            取消
+          </Button>
+          <Button disabled={saving} form="site-form" type="submit">
+            {submitLabel}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
