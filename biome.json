@@ -16,6 +16,8 @@
       "!build",
       "!.cursor",
       "!.vscode",
+      "!.agents",
+      "!.claude",
       "!src/components/ui",
       "!src/components/ai-elements"
     ]

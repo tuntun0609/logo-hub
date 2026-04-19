@@ -19,7 +19,7 @@ export async function SidebarLayout({
         <AppSidebar />
         <SidebarInset>
           <MobileHeader />
-          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:px-8">
             {children}
           </div>
         </SidebarInset>

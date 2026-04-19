@@ -45,6 +45,20 @@ export interface PlatformTopic {
 
 export const toolGroups: PlatformToolGroup[] = [
   {
+    label: 'AI 工具',
+    tools: [
+      {
+        category: 'AI',
+        name: 'AI Logo Maker',
+        description: '使用 AI 生成 SVG 格式的 logo，支持风格预设和实时编辑',
+        href: '/tools/ai-logo-maker',
+        tags: ['AI', 'SVG', '生成'],
+        thumbnail:
+          'https://oss.logohub.art/logos/1776520547759-notion-cover-icon-maker.png',
+      },
+    ],
+  },
+  {
     label: '转换工具',
     tools: [
       {

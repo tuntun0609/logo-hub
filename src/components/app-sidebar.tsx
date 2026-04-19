@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from '@clerk/nextjs'
 import {
+  Bot,
   ChevronsUpDown,
   CircleHelp,
   Compass,
@@ -53,6 +54,7 @@ import {
 
 const toolItems = [
   { title: '全部工具', url: '/tools', icon: Wrench },
+  { title: 'AI Logo Maker', url: '/tools/ai-logo-maker', icon: Bot },
   { title: 'Icon Maker', url: '/tools/icon-maker', icon: Sparkles },
   { title: 'ICO Converter', url: '/tools/ico-converter', icon: FileImage },
   {
