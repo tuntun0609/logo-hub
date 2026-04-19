@@ -249,7 +249,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
         <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:px-0.5">
-          <SidebarGroupLabel className="px-3 font-medium text-[11px] text-muted-foreground/75 uppercase tracking-[0.14em]">
+          <SidebarGroupLabel className="px-3 font-medium text-[11px] text-muted-foreground/75 uppercase tracking-[0.14em] group-data-[collapsible=icon]:hidden">
             Tools
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -258,7 +258,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
         <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:px-0.5">
-          <SidebarGroupLabel className="px-3 font-medium text-[11px] text-muted-foreground/75 uppercase tracking-[0.14em]">
+          <SidebarGroupLabel className="px-3 font-medium text-[11px] text-muted-foreground/75 uppercase tracking-[0.14em] group-data-[collapsible=icon]:hidden">
             Discover
           </SidebarGroupLabel>
           <SidebarGroupContent>

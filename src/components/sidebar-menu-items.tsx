@@ -35,7 +35,7 @@ export function SidebarMenuItems({ items }: SidebarMenuItemsProps) {
             />
             <span
               className={cn(
-                'min-w-0 flex-1 text-sm leading-none transition-colors duration-200 group-data-[collapsible=icon]:hidden',
+                'min-w-0 flex-1 text-sm leading-tight transition-colors duration-200 group-data-[collapsible=icon]:hidden',
                 item.isActive ? 'font-semibold text-foreground' : 'font-medium'
               )}
             >
