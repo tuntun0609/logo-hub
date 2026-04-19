@@ -76,6 +76,7 @@ export function IconSettings({
               Fill Type
             </label>
             <Select
+              items={FILL_TYPES}
               onValueChange={(v) =>
                 onFillStylesChange({ fillType: v as FillType })
               }
@@ -86,7 +87,11 @@ export function IconSettings({
               </SelectTrigger>
               <SelectContent>
                 {FILL_TYPES.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <SelectItem
+                    key={opt.value}
+                    label={opt.label}
+                    value={opt.value}
+                  >
                     {opt.label}
                   </SelectItem>
                 ))}

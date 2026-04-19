@@ -86,13 +86,10 @@ export default function IconMakerPage() {
   }, [setState])
 
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden md:flex-none"
-      style={{ height: 'calc(100svh - 2rem)' }}
-    >
+    <div className="flex min-h-0 flex-1 flex-col gap-3 md:h-[calc(100svh-3rem)] md:flex-none md:overflow-hidden">
       <ToolHeader
         actions={
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-end gap-1">
             <Button
               aria-label="Undo"
               disabled={!canUndo}
@@ -148,9 +145,9 @@ export default function IconMakerPage() {
         variant="compact"
       />
 
-      <div className="flex min-h-0 flex-1 gap-2 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-visible md:flex-row md:overflow-hidden">
         {/* Left: Icon picker */}
-        <aside className="flex min-h-0 w-56 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30">
+        <aside className="flex h-[min(68svh,30rem)] min-h-72 w-full shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30 md:h-auto md:min-h-0 md:w-56">
           <div className="min-h-0 flex-1 p-2">
             <IconPicker
               customText={state.customText}
@@ -179,12 +176,12 @@ export default function IconMakerPage() {
         </aside>
 
         {/* Center: Preview */}
-        <main className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto p-4">
+        <main className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto rounded-lg border border-border bg-muted/20 p-3 md:border-0 md:bg-transparent md:p-4">
           <IconPreview canvasRef={canvasRef} state={state} />
         </main>
 
         {/* Right: Settings */}
-        <aside className="flex min-h-0 w-64 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30 p-3">
+        <aside className="flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30 p-3 md:w-64">
           <IconSettings
             onBackgroundChange={setBackground}
             onFillStylesChange={setFillStyles}

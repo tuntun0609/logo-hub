@@ -253,11 +253,13 @@ export function IconPreview({ state, className, canvasRef }: IconPreviewProps) {
   }, [draw])
 
   return (
-    <div className={cn('flex flex-col items-center gap-2', className)}>
-      <div
-        className="relative flex items-center justify-center overflow-hidden rounded-lg border border-border"
-        style={{ width: SIZE + 40, height: SIZE + 40 }}
-      >
+    <div
+      className={cn(
+        'flex w-full min-w-0 flex-col items-center gap-2',
+        className
+      )}
+    >
+      <div className="relative flex aspect-square w-full max-w-[552px] items-center justify-center overflow-hidden rounded-lg border border-border p-3 sm:p-4 md:p-5">
         <div
           aria-hidden
           className="absolute inset-0"
@@ -274,7 +276,7 @@ export function IconPreview({ state, className, canvasRef }: IconPreviewProps) {
           }}
         />
         <canvas
-          className="relative block"
+          className="relative block aspect-square w-full max-w-[512px]"
           height={SIZE}
           ref={ref}
           width={SIZE}
