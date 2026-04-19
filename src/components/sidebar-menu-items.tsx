@@ -22,23 +22,21 @@ interface SidebarMenuItemsProps {
 
 export function SidebarMenuItems({ items }: SidebarMenuItemsProps) {
   return (
-    <SidebarMenu className="gap-1.5">
+    <SidebarMenu className="gap-1">
       {items.map((item) => {
         const href = item.url
         const itemContent = (
           <>
             <item.icon
               className={cn(
-                'transition-all duration-200',
-                item.isActive
-                  ? 'text-primary'
-                  : 'group-hover/button:scale-110 group-hover/button:text-foreground'
+                'size-4 shrink-0 self-center transition-colors duration-200',
+                item.isActive ? 'text-foreground' : 'text-muted-foreground'
               )}
             />
             <span
               className={cn(
-                'transition-colors duration-200',
-                item.isActive ? 'font-semibold' : 'font-medium'
+                'min-w-0 flex-1 text-sm leading-none transition-colors duration-200 group-data-[collapsible=icon]:hidden',
+                item.isActive ? 'font-semibold text-foreground' : 'font-medium'
               )}
             >
               {item.title}
@@ -50,10 +48,10 @@ export function SidebarMenuItems({ items }: SidebarMenuItemsProps) {
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
               className={cn(
-                'group/button transition-all duration-200',
+                'group/button min-h-10 items-center justify-start gap-3 rounded-xl border border-transparent px-3 py-2 transition-[background-color,border-color,color] duration-200 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:[&_svg]:translate-x-px',
                 item.isActive
-                  ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20'
-                  : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
+                  ? 'border-border bg-foreground/4 text-foreground hover:bg-foreground/5.5 dark:bg-background/50 dark:hover:bg-background/70'
+                  : 'text-muted-foreground hover:border-border/70 hover:bg-foreground/3 hover:text-foreground dark:hover:bg-background/40'
               )}
               isActive={item.isActive}
               render={
@@ -74,8 +72,8 @@ export function SidebarMenuItems({ items }: SidebarMenuItemsProps) {
                 className={cn(
                   'transition-all duration-200',
                   item.isActive
-                    ? 'bg-primary/20 text-primary'
-                    : 'bg-primary/10 text-primary group-hover/button:bg-primary/20'
+                    ? 'bg-foreground/10 text-foreground'
+                    : 'bg-foreground/6 text-muted-foreground group-hover/button:bg-foreground/10 group-hover/button:text-foreground'
                 )}
               >
                 {item.badge}

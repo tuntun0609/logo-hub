@@ -103,7 +103,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   let footerUserMenu: ReactNode
   if (!isLoaded) {
     footerUserMenu = (
-      <SidebarMenuButton className="justify-center" disabled size="lg">
+      <SidebarMenuButton
+        className="justify-center rounded-xl border border-transparent hover:border-border/70 hover:bg-foreground/3 dark:hover:bg-background/40"
+        disabled
+        size="lg"
+      >
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </SidebarMenuButton>
     )
@@ -114,6 +118,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           render={(triggerProps) => (
             <SidebarMenuButton
               {...triggerProps}
+              className="rounded-xl border border-transparent hover:border-border/70 hover:bg-foreground/3 dark:hover:bg-background/40"
               size="lg"
               tooltip={user.fullName || 'Account'}
             >
@@ -190,6 +195,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   } else {
     footerUserMenu = (
       <SidebarMenuButton
+        className="rounded-xl border border-transparent hover:border-border/70 hover:bg-foreground/3 dark:hover:bg-background/40"
         render={(buttonProps) => (
           <Link {...buttonProps} href="/sign-in">
             <LogIn />
@@ -202,30 +208,39 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" variant="floating" {...props}>
-      <SidebarHeader>
-        <div className="flex items-center justify-between gap-4 group-data-[state=collapsed]:flex-col">
-          <SidebarMenu>
+    <Sidebar
+      className="group-data-[collapsible=icon]:p-2 group-data-[variant=floating]:p-3"
+      collapsible="icon"
+      variant="floating"
+      {...props}
+    >
+      <SidebarHeader className="gap-0 border-border/70 border-b px-3 pt-3 pb-3 group-data-[collapsible=icon]:px-0">
+        <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1.5">
+          <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Hexagon className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Logo Hub</span>
-                  <span className="truncate text-muted-foreground text-xs">
-                    Image & Logo Toolkit
-                  </span>
-                </div>
-              </SidebarMenuButton>
+              <SidebarMenuButton
+                className="h-11 justify-start rounded-xl pl-0 hover:bg-transparent active:bg-transparent data-active:bg-transparent group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+                render={(buttonProps) => (
+                  <Link {...buttonProps} href="/">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-foreground/4 text-foreground dark:bg-background/70">
+                      <Hexagon className="size-4" />
+                    </div>
+                    <span className="min-w-0 font-semibold text-sm tracking-tight group-data-[collapsible=icon]:hidden">
+                      Logo Hub
+                    </span>
+                  </Link>
+                )}
+                size="lg"
+                tooltip="Logo Hub"
+              />
             </SidebarMenuItem>
           </SidebarMenu>
-          <SidebarTrigger />
+          <SidebarTrigger className="shrink-0 rounded-lg border border-transparent hover:border-border/70 hover:bg-foreground/4 dark:hover:bg-background/70" />
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="px-2 pt-3 pb-1 group-data-[collapsible=icon]:px-0.5">
           <SidebarGroupContent>
             <SidebarMenuItems
               items={withActive([{ title: '首页', url: '/', icon: Home }])}
@@ -233,28 +248,36 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+        <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:px-0.5">
+          <SidebarGroupLabel className="px-3 font-medium text-[11px] text-muted-foreground/75 uppercase tracking-[0.14em]">
+            Tools
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenuItems items={withActive(toolItems)} />
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Discover</SidebarGroupLabel>
+        <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:px-0.5">
+          <SidebarGroupLabel className="px-3 font-medium text-[11px] text-muted-foreground/75 uppercase tracking-[0.14em]">
+            Discover
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenuItems items={withActive(discoverItems)} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-border/70 border-t px-2 pt-3 pb-2 group-data-[collapsible=icon]:px-0.5">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={(triggerProps) => (
-                  <SidebarMenuButton {...triggerProps} tooltip="Theme">
+                  <SidebarMenuButton
+                    {...triggerProps}
+                    className="rounded-xl border border-transparent hover:border-border/70 hover:bg-foreground/3 dark:hover:bg-background/40"
+                    tooltip="Theme"
+                  >
                     <div className="relative size-4 shrink-0">
                       <Sun className="absolute inset-0 size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                       <Moon className="absolute inset-0 size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
