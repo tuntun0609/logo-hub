@@ -47,10 +47,13 @@ export default function AiLogoMakerPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 md:h-[calc(100svh-3rem)] md:flex-none md:overflow-hidden">
+    <div
+      className="flex min-h-0 flex-1 flex-col gap-2 md:h-[calc(100svh-3rem)] md:flex-none md:overflow-hidden"
+      data-page="ai-logo-maker"
+    >
       <div className="flex shrink-0 items-center">
         <Link
-          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-background/75 px-3 font-medium text-muted-foreground text-xs transition hover:bg-muted hover:text-foreground"
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-3 font-medium text-muted-foreground text-xs transition hover:bg-muted hover:text-foreground"
           href="/tools"
         >
           <ArrowLeftIcon size={15} />
@@ -58,8 +61,11 @@ export default function AiLogoMakerPage() {
         </Link>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[22rem_minmax(0,1fr)] md:overflow-hidden lg:grid-cols-[24rem_minmax(0,1fr)] md:[grid-template-rows:minmax(0,1fr)]">
-        <ToolPanel className="min-h-[32rem] overflow-hidden p-0 md:h-full md:min-h-0">
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(23rem,28rem)_minmax(0,1fr)] lg:overflow-hidden lg:[grid-template-rows:minmax(0,1fr)]">
+        <ToolPanel
+          className="min-h-[36rem] overflow-hidden lg:h-full lg:min-h-0"
+          padding="none"
+        >
           <ChatPanel
             isGenerating={isGenerating}
             messages={messages}
@@ -68,8 +74,10 @@ export default function AiLogoMakerPage() {
             selectedStyle={selectedStyle}
           />
         </ToolPanel>
-
-        <ToolPanel className="min-h-[32rem] overflow-hidden p-0 md:h-full md:min-h-0">
+        <ToolPanel
+          className="min-h-[34rem] overflow-hidden lg:h-full lg:min-h-0"
+          padding="none"
+        >
           <PreviewPanel
             actions={
               <div className="flex flex-wrap items-center justify-end gap-1.5">

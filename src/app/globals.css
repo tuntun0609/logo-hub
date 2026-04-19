@@ -128,6 +128,19 @@
   }
 }
 
+@supports selector(:has(*)) {
+  [data-slot="main-content-shell"]:has([data-page="ai-logo-maker"]) {
+    max-width: min(96rem, calc(100vw - 1.5rem)) !important;
+    padding-inline: clamp(1rem, 2vw, 2.5rem) !important;
+  }
+
+  @media (min-width: 1024px) {
+    [data-slot="main-content-shell"]:has([data-page="ai-logo-maker"]) {
+      padding-inline: clamp(1.5rem, 2.2vw, 3rem) !important;
+    }
+  }
+}
+
 /* Subtle noise texture for hero sections */
 @layer utilities {
   .bg-noise {

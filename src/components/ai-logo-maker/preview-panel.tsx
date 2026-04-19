@@ -1,4 +1,4 @@
-import { Image, Maximize2, Minus, Plus } from 'lucide-react'
+import { Image, Maximize2, Minus, Palette, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -39,87 +39,107 @@ export function PreviewPanel({
   const renderContent = () => {
     if (!svgCode) {
       return (
-        <div className="flex h-full items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-[1.5rem] border border-border/70 border-dashed bg-muted/20 px-8 py-10 text-center">
-            <Image className="mx-auto mb-4 size-14 text-muted-foreground/55" />
-            <p className="font-medium text-sm">生成后这里会显示 SVG 成品</p>
-            <p className="mt-2 text-muted-foreground text-sm leading-6">
-              支持切换背景、缩放检查细节，也能直接进入代码模式修改路径与颜色。
-            </p>
-            <div className="mt-5 flex flex-wrap justify-center gap-2">
-              <span className="rounded-full bg-background/80 px-3 py-1 text-muted-foreground text-xs">
-                实时预览
-              </span>
-              <span className="rounded-full bg-background/80 px-3 py-1 text-muted-foreground text-xs">
-                代码编辑
-              </span>
-              <span className="rounded-full bg-background/80 px-3 py-1 text-muted-foreground text-xs">
-                SVG / PNG 导出
-              </span>
+        <div className="grid h-full place-items-center p-4 sm:p-5">
+          <div className="w-full max-w-xl rounded-[1.45rem] border border-border/70 bg-muted/15 p-6 text-center">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-[1.25rem] border border-border/70 bg-background text-muted-foreground">
+              <Image className="size-7" />
             </div>
+            <p className="mt-4 font-medium text-base tracking-tight">
+              生成后这里会显示 logo 预览
+            </p>
+            <p className="mt-2 text-muted-foreground text-sm leading-6">
+              可以切换背景、缩放查看，或进入代码模式编辑 SVG。
+            </p>
           </div>
         </div>
       )
     }
 
     if (editMode) {
-      return <SvgCodeEditor code={svgCode} onChange={onSvgChange} />
+      return (
+        <div className="min-h-0 flex-1 bg-muted/15">
+          <SvgCodeEditor code={svgCode} onChange={onSvgChange} />
+        </div>
+      )
     }
 
     return (
       <div className="flex h-full flex-col">
-        <div className="flex flex-wrap items-center gap-2 border-border/70 border-b px-4 py-3">
-          <span className="mr-1 text-muted-foreground text-xs">背景</span>
-          {BG_OPTIONS.map((option) => (
-            <button
-              className={cn(
-                'rounded-full px-3 py-1.5 text-xs transition',
-                bgColor === option.value
-                  ? 'bg-foreground text-background'
-                  : 'bg-muted/70 text-muted-foreground hover:text-foreground'
-              )}
-              key={option.value}
-              onClick={() => setBgColor(option.value)}
-              type="button"
-            >
-              {option.label}
-            </button>
-          ))}
-          <div className="mx-1 hidden h-4 w-px bg-border sm:block" />
-          <span className="text-muted-foreground text-xs">缩放</span>
-          <Button
-            onClick={() => setScale(Math.max(0.5, scale - 0.25))}
-            size="icon-sm"
-            variant="outline"
-          >
-            <Minus className="size-3.5" />
-          </Button>
-          <span className="min-w-12 text-center font-mono text-muted-foreground text-xs">
-            {Math.round(scale * 100)}%
-          </span>
-          <Button
-            onClick={() => setScale(Math.min(3, scale + 0.25))}
-            size="icon-sm"
-            variant="outline"
-          >
-            <Plus className="size-3.5" />
-          </Button>
-          <Button onClick={() => setScale(1)} size="icon-sm" variant="ghost">
-            <Maximize2 className="size-3.5" />
-          </Button>
+        <div className="border-border/70 border-b bg-background px-3.5 py-2.5 sm:px-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1.5 text-muted-foreground text-xs uppercase tracking-[0.14em]">
+                  <Palette className="size-3" />
+                  背景
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {BG_OPTIONS.map((option) => (
+                    <button
+                      className={cn(
+                        'rounded-full px-3 py-1.5 text-xs transition',
+                        bgColor === option.value
+                          ? 'bg-foreground text-background'
+                          : 'bg-muted/70 text-muted-foreground hover:text-foreground'
+                      )}
+                      key={option.value}
+                      onClick={() => setBgColor(option.value)}
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="hidden h-5 w-px bg-border lg:block" />
+
+              <div className="flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-2 py-0.5">
+                <span className="px-1.5 text-muted-foreground text-xs">
+                  缩放
+                </span>
+                <Button
+                  onClick={() => setScale(Math.max(0.5, scale - 0.25))}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <Minus className="size-3.5" />
+                </Button>
+                <span className="min-w-12 text-center font-mono text-muted-foreground text-xs">
+                  {Math.round(scale * 100)}%
+                </span>
+                <Button
+                  onClick={() => setScale(Math.min(3, scale + 0.25))}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <Plus className="size-3.5" />
+                </Button>
+                <Button
+                  onClick={() => setScale(1)}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <Maximize2 className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+            {actions}
+          </div>
         </div>
 
-        <div className="min-h-0 flex-1 p-4">
+        <div className="min-h-0 flex-1 p-3.5 sm:p-4 lg:p-5">
           <div
             className={cn(
-              'flex h-full min-h-[24rem] items-center justify-center overflow-hidden rounded-[1.5rem] border border-border/60 p-8',
+              'relative flex h-full min-h-[28rem] items-center justify-center overflow-hidden rounded-[1.5rem] border border-border/60 p-6 sm:p-8 lg:p-10',
               bgColor === 'checkerboard' && 'bg-checkerboard',
               bgColor === 'white' && 'bg-white',
               bgColor === 'black' && 'bg-black'
             )}
           >
+            <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-foreground/15 to-transparent" />
             <SvgMarkup
-              className="origin-center transition-transform duration-200 ease-out [&_svg]:block [&_svg]:h-auto [&_svg]:max-h-[min(60vh,32rem)] [&_svg]:w-auto [&_svg]:max-w-full"
+              className="origin-center transition-transform duration-200 ease-out [&_svg]:block [&_svg]:h-auto [&_svg]:max-h-[min(70vh,40rem)] [&_svg]:w-auto [&_svg]:max-w-full"
               style={{ transform: `scale(${scale})` }}
               svgCode={svgCode}
             />
@@ -131,9 +151,9 @@ export function PreviewPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="border-border/70 border-b bg-muted/20 px-4 py-3">
+      <div className="border-border/70 border-b bg-background px-3.5 py-2.5 sm:px-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-sm">预览</span>
             {dimensions && (
               <span className="rounded-full bg-background/80 px-2.5 py-1 text-muted-foreground text-xs">
